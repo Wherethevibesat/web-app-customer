@@ -1,14 +1,30 @@
 import Link from "next/link";
+import { BrowseFiltersBar } from "@/components/browse-filters";
 import { VenueCard } from "@/components/venue-card";
+import {
+  listNeighborhoodOptions,
+  resolveNeighborhoodName,
+} from "@/lib/data/neighborhoods";
+import { parseBrowseFilters } from "@/lib/filter-url";
 import { listVenues } from "@/lib/data/venues";
 
 export default async function VenuesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; neighborhood?: string }>;
 }) {
-  const { q } = await searchParams;
-  const venues = await listVenues(q).catch(() => []);
+  const raw = await searchParams;
+  const filters = parseBrowseFilters(raw);
+  const neighborhoodName = await resolveNeighborhoodName(filters.neighborhood);
+
+  const [venues, neighborhoods] = await Promise.all([
+    listVenues({
+      search: filters.q,
+      neighborhood: neighborhoodName,
+    }).catch(() => []),
+    listNeighborhoodOptions().catch(() => []),
+  ]);
+
   const featured = venues.filter((v) => v.featured);
   const rest = venues.filter((v) => !v.featured);
 
@@ -16,17 +32,24 @@ export default async function VenuesPage({
     <div className="mx-auto max-w-7xl px-4 py-10 lg:px-8 lg:py-14">
       <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Venues</h1>
       <p className="mt-2 max-w-2xl text-wtva-muted">
-        Clubs, lounges, and nightlife spots. Check in when you visit to earn ranking points.
+        Clubs, lounges, and nightlife spots. Filter by neighborhood or search by name.
       </p>
 
-      <form className="mt-8 max-w-md" method="get">
-        <input
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Search by name or neighborhood…"
-          className="w-full rounded-lg border border-wtva-dark-300 bg-wtva-card px-4 py-3 text-sm outline-none focus:border-foreground"
+      <div className="mt-8">
+        <BrowseFiltersBar
+          basePath="/venues"
+          filters={{ neighborhood: filters.neighborhood, q: filters.q }}
+          neighborhoods={neighborhoods}
+          showSearch
+          showEventTypes={false}
         />
-      </form>
+      </div>
+
+      {neighborhoodName && (
+        <p className="mt-6 text-sm text-wtva-muted">
+          {venues.length} venue{venues.length === 1 ? "" : "s"} in {neighborhoodName}
+        </p>
+      )}
 
       {featured.length > 0 && (
         <section className="mt-10">
@@ -55,7 +78,10 @@ export default async function VenuesPage({
           </div>
         ) : (
           <p className="rounded-xl border border-dashed border-wtva-dark-300 py-20 text-center text-wtva-muted">
-            No venues found. Try a different search.
+            No venues found.{" "}
+            <Link href="/venues" className="underline">
+              Clear filters
+            </Link>
           </p>
         )}
       </section>

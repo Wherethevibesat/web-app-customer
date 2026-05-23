@@ -20,7 +20,12 @@ export interface Venue {
 const VENUE_SELECT =
   "id, name, venue_type, address, image_url, description, rating, neighborhood, check_in_count, is_open, hours_label, featured, latitude, longitude";
 
-export async function listVenues(search?: string): Promise<Venue[]> {
+export async function listVenues(options?: {
+  search?: string;
+  neighborhood?: string;
+}): Promise<Venue[]> {
+  const search = options?.search;
+  const neighborhood = options?.neighborhood;
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("venues")
@@ -33,6 +38,10 @@ export async function listVenues(search?: string): Promise<Venue[]> {
     const fallback = await supabase.from("venues").select("*").order("name");
     if (fallback.error) throw fallback.error;
     let rows = (fallback.data ?? []) as Venue[];
+    if (neighborhood?.trim()) {
+      const target = neighborhood.trim().toLowerCase();
+      rows = rows.filter((v) => (v.neighborhood ?? "").toLowerCase() === target);
+    }
     if (search?.trim()) {
       const q = search.toLowerCase();
       rows = rows.filter(
@@ -45,6 +54,10 @@ export async function listVenues(search?: string): Promise<Venue[]> {
   }
 
   let rows = (data ?? []) as Venue[];
+  if (neighborhood?.trim()) {
+    const target = neighborhood.trim().toLowerCase();
+    rows = rows.filter((v) => (v.neighborhood ?? "").toLowerCase() === target);
+  }
   if (search?.trim()) {
     const q = search.toLowerCase();
     rows = rows.filter(

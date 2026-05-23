@@ -7,15 +7,17 @@ import { Search, Menu, X, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV = [
-  { href: "/", label: "Home" },
-  { href: "/events", label: "Events" },
+  { href: "/discover", label: "Discover" },
+  { href: "/discover/events", label: "Events" },
   { href: "/venues", label: "Venues" },
-  { href: "/map", label: "Map" },
+  { href: "/discover/map", label: "Map" },
   { href: "/ranking", label: "Rankings" },
 ];
 
 function isActive(pathname: string, href: string) {
-  if (href === "/") return pathname === "/";
+  if (href === "/discover") {
+    return pathname === "/" || pathname === "/discover" || pathname.startsWith("/discover/");
+  }
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -35,7 +37,7 @@ export function SiteHeader({
     e.preventDefault();
     const params = new URLSearchParams();
     if (q.trim()) params.set("q", q.trim());
-    router.push(`/search?${params.toString()}`);
+    router.push(`/discover/search?${params.toString()}`);
     setMenuOpen(false);
   }
 

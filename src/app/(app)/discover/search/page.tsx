@@ -1,12 +1,9 @@
-import { redirect } from "next/navigation";
+import { SearchBrowseView } from "@/components/pages/search-browse-view";
 
-export default async function DiscoverSearchRedirect({
+export default function DiscoverSearchPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; type?: string; neighborhood?: string }>;
 }) {
-  const { q } = await searchParams;
-  const params = new URLSearchParams();
-  if (q) params.set("q", q);
-  redirect(`/search?${params.toString()}`);
+  return <SearchBrowseView basePath="/discover/search" searchParams={searchParams} />;
 }

@@ -1,3 +1,4 @@
+import { mergeEventTypes } from "@/lib/event-types";
 import { createClient } from "@/lib/supabase/server";
 
 export interface EventVenue {
@@ -56,7 +57,7 @@ export async function listPublishedEvents(options?: {
     query = query.eq("event_type", options.eventType);
   }
   if (options?.neighborhood) {
-    query = query.ilike("neighborhood", `%${options.neighborhood}%`);
+    query = query.eq("neighborhood", options.neighborhood);
   }
   if (options?.limit) {
     query = query.limit(options.limit);
@@ -111,25 +112,53 @@ export async function getEvent(id: string): Promise<Event | null> {
   } as Event;
 }
 
-export async function searchEvents(query: string, limit = 20): Promise<Event[]> {
-  const all = await listPublishedEvents({ upcomingOnly: false, limit: 100 });
-  const q = query.toLowerCase().trim();
-  if (!q) return all.slice(0, limit);
-  return all
-    .filter(
+export async function getEventTypes(): Promise<string[]> {
+  const events = await listPublishedEvents({ upcomingOnly: false, limit: 200 });
+  const fromDb = [...new Set(events.map((e) => e.event_type))];
+  return mergeEventTypes(fromDb);
+}
+
+export function filterEventsClient(
+  events: Event[],
+  options?: { q?: string; eventType?: string; neighborhood?: string },
+): Event[] {
+  let rows = events;
+  if (options?.eventType) {
+    rows = rows.filter((e) => e.event_type === options.eventType);
+  }
+  if (options?.neighborhood) {
+    const target = options.neighborhood.toLowerCase();
+    rows = rows.filter((e) => (e.neighborhood ?? "").toLowerCase() === target);
+  }
+  if (options?.q?.trim()) {
+    const q = options.q.trim().toLowerCase();
+    rows = rows.filter(
       (e) =>
         e.title.toLowerCase().includes(q) ||
         e.event_type.toLowerCase().includes(q) ||
         (e.neighborhood ?? "").toLowerCase().includes(q) ||
         (e.venue?.name ?? "").toLowerCase().includes(q) ||
         (e.description ?? "").toLowerCase().includes(q),
-    )
-    .slice(0, limit);
+    );
+  }
+  return rows;
 }
 
-export async function getEventTypes(): Promise<string[]> {
-  const events = await listPublishedEvents({ upcomingOnly: false, limit: 200 });
-  return [...new Set(events.map((e) => e.event_type))].sort();
+export async function searchEvents(
+  query: string,
+  options?: { eventType?: string; neighborhood?: string; limit?: number },
+): Promise<Event[]> {
+  const all = await listPublishedEvents({
+    upcomingOnly: true,
+    eventType: options?.eventType,
+    neighborhood: options?.neighborhood,
+    limit: 200,
+  });
+  return filterEventsClient(all, {
+    q: query,
+    eventType: options?.eventType,
+    neighborhood: options?.neighborhood,
+  }).slice(0, options?.limit ?? 40);
 }
 
 export interface VipPackage {

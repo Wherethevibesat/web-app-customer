@@ -93,3 +93,34 @@ export async function listNeighborhoodNames(): Promise<string[]> {
   const groups = await listNeighborhoodGroups();
   return groups.map((g) => g.name);
 }
+
+export async function listNeighborhoodOptions(): Promise<
+  { name: string; slug: string }[]
+> {
+  try {
+    const rows = await listPublicNeighborhoods();
+    if (rows.length > 0) {
+      return rows.map((r) => ({ name: r.name, slug: r.slug }));
+    }
+  } catch {
+    // fall through
+  }
+  const groups = await listNeighborhoodGroups();
+  return groups.map((g) => ({ name: g.name, slug: g.slug }));
+}
+
+export async function resolveNeighborhoodName(
+  slug: string | undefined,
+): Promise<string | undefined> {
+  if (!slug?.trim()) return undefined;
+  const target = slug.trim().toLowerCase();
+  try {
+    const rows = await listPublicNeighborhoods();
+    const match = rows.find((r) => r.slug.toLowerCase() === target);
+    if (match) return match.name;
+  } catch {
+    // fall through
+  }
+  const groups = await listNeighborhoodGroups();
+  return groups.find((g) => g.slug.toLowerCase() === target)?.name;
+}

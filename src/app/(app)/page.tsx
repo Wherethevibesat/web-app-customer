@@ -4,7 +4,7 @@ import { EventCard } from "@/components/event-card";
 import { HeroVideoBackground } from "@/components/hero-video-background";
 import { SectionHeading } from "@/components/section-heading";
 import { VenueCard } from "@/components/venue-card";
-import { listPublishedEvents, getEventTypes } from "@/lib/data/events";
+import { listPublishedEvents } from "@/lib/data/events";
 import { listVenues } from "@/lib/data/venues";
 
 const HERO_VIDEO_SRC = process.env.NEXT_PUBLIC_HERO_VIDEO_URL ?? "/videos/hero.mp4";
@@ -12,11 +12,10 @@ const HERO_VIDEO_POSTER =
   process.env.NEXT_PUBLIC_HERO_VIDEO_POSTER ?? "/videos/hero-poster.jpg";
 
 export default async function HomePage() {
-  const [featuredEvents, upcomingEvents, venues, eventTypes] = await Promise.all([
+  const [featuredEvents, upcomingEvents, venues] = await Promise.all([
     listPublishedEvents({ featuredOnly: true, limit: 3 }).catch(() => []),
     listPublishedEvents({ limit: 8 }).catch(() => []),
     listVenues().catch(() => []),
-    getEventTypes().catch(() => []),
   ]);
 
   const featuredVenues = venues.filter((v) => v.featured).slice(0, 4);
@@ -40,19 +39,19 @@ export default async function HomePage() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              href="/events"
+              href="/discover"
               className="inline-flex items-center gap-2 rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background"
             >
-              Browse events <ArrowRight className="h-4 w-4" />
+              Open discover <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
-              href="/venues"
+              href="/discover/events"
               className="inline-flex items-center gap-2 rounded-lg border border-wtva-dark-300 bg-black/20 px-6 py-3 text-sm font-semibold backdrop-blur-sm hover:border-foreground"
             >
-              Explore venues
+              Browse events
             </Link>
           </div>
-          <form action="/search" method="get" className="mt-10 max-w-2xl">
+          <form action="/discover/search" method="get" className="mt-10 max-w-2xl">
             <div className="flex gap-2 rounded-xl border border-wtva-dark-300/80 bg-black/40 p-2 shadow-lg backdrop-blur-md">
               <input
                 name="q"
@@ -71,37 +70,13 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {eventTypes.length > 0 && (
-        <section className="border-b border-wtva-dark-300 bg-wtva-dark-400/50">
-          <div className="mx-auto max-w-7xl px-4 py-6 lg:px-8">
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href="/events"
-                className="rounded-full bg-foreground px-4 py-1.5 text-xs font-semibold text-background"
-              >
-                All
-              </Link>
-              {eventTypes.map((type) => (
-                <Link
-                  key={type}
-                  href={`/events?type=${encodeURIComponent(type)}`}
-                  className="rounded-full border border-wtva-dark-300 px-4 py-1.5 text-xs font-medium hover:border-foreground"
-                >
-                  {type}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       <div className="mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16 space-y-16">
         {featuredEvents.length > 0 && (
           <section>
             <SectionHeading
               title="Featured events"
               subtitle="Hand-picked nights out"
-              href="/events?featured=1"
+              href="/discover/events?featured=1"
             />
             <div className="grid gap-6 lg:grid-cols-1">
               {featuredEvents.map((e) => (
@@ -115,7 +90,7 @@ export default async function HomePage() {
           <SectionHeading
             title="Upcoming events"
             subtitle="What's on the calendar"
-            href="/events"
+            href="/discover/events"
           />
           {upcomingEvents.length > 0 ? (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
