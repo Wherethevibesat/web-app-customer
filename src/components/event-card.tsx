@@ -1,0 +1,63 @@
+import Link from "next/link";
+import Image from "next/image";
+import { Calendar } from "lucide-react";
+import type { Event } from "@/lib/data/events";
+import { formatEventDate, formatEventTime } from "@/lib/format";
+
+export function EventCard({ event, large }: { event: Event; large?: boolean }) {
+  return (
+    <Link
+      href={`/events/${event.id}`}
+      className={`group block overflow-hidden rounded-xl border border-wtva-dark-300 bg-wtva-card transition-all hover:border-wtva-muted hover:shadow-lg ${
+        large ? "md:flex md:flex-row" : ""
+      }`}
+    >
+      <div
+        className={`relative bg-wtva-dark-400 ${
+          large ? "aspect-[16/9] md:aspect-auto md:w-2/5 md:min-h-[200px]" : "aspect-[16/10]"
+        }`}
+      >
+        {event.image_url ? (
+          <Image
+            src={event.image_url}
+            alt=""
+            fill
+            className="object-cover transition-transform group-hover:scale-[1.02]"
+            unoptimized
+          />
+        ) : (
+          <div className="flex h-full min-h-[140px] items-center justify-center text-wtva-subtle">
+            <Calendar className="h-12 w-12 opacity-40" />
+          </div>
+        )}
+        {event.featured && (
+          <span className="absolute left-3 top-3 rounded bg-foreground px-2 py-0.5 text-xs font-bold text-background">
+            Featured
+          </span>
+        )}
+        <span className="absolute bottom-3 left-3 rounded bg-black/70 px-2 py-1 text-xs font-medium backdrop-blur">
+          {event.event_type}
+        </span>
+      </div>
+      <div className={`p-5 ${large ? "md:flex md:flex-1 md:flex-col md:justify-center" : ""}`}>
+        <p className="text-xs font-semibold uppercase tracking-wide text-wtva-muted">
+          {formatEventDate(event.starts_at)} · {formatEventTime(event.starts_at)}
+        </p>
+        <h3 className={`mt-1 font-bold group-hover:underline ${large ? "text-xl md:text-2xl" : "text-lg"}`}>
+          {event.title}
+        </h3>
+        {event.venue?.name && (
+          <p className="mt-1 text-sm text-wtva-muted">
+            at {event.venue.name}
+            {event.neighborhood || event.venue.neighborhood
+              ? ` · ${event.neighborhood ?? event.venue.neighborhood}`
+              : ""}
+          </p>
+        )}
+        {event.description && !large && (
+          <p className="mt-2 line-clamp-2 text-sm text-wtva-subtle">{event.description}</p>
+        )}
+      </div>
+    </Link>
+  );
+}

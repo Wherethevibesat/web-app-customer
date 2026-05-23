@@ -1,0 +1,139 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import Image from "next/image";
+import { notFound } from "next/navigation";
+import { MapPin, Calendar } from "lucide-react";
+import { getEvent, listEventVipPackages } from "@/lib/data/events";
+import { formatEventDateTime, formatPrice } from "@/lib/format";
+import { createClient } from "@/lib/supabase/server";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const event = await getEvent(id);
+  if (!event) return { title: "Event not found" };
+  return {
+    title: event.title,
+    description: event.description?.slice(0, 160) ?? `${event.event_type} event`,
+  };
+}
+
+export default async function EventDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const event = await getEvent(id);
+  if (!event) notFound();
+
+  const vipPackages = await listEventVipPackages(id);
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  return (
+    <article>
+      <div className="relative aspect-[21/9] max-h-[420px] w-full bg-wtva-dark-400">
+        {event.image_url ? (
+          <Image src={event.image_url} alt="" fill className="object-cover" unoptimized priority />
+        ) : (
+          <div className="flex h-full min-h-[240px] items-center justify-center">
+            <Calendar className="h-20 w-20 text-wtva-subtle opacity-30" />
+          </div>
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+      </div>
+
+      <div className="mx-auto max-w-4xl px-4 py-10 lg:px-8">
+        <div className="flex flex-wrap gap-2">
+          <span className="rounded-full border border-wtva-dark-300 px-3 py-1 text-xs font-medium">
+            {event.event_type}
+          </span>
+          {event.featured && (
+            <span className="rounded-full bg-foreground px-3 py-1 text-xs font-semibold text-background">
+              Featured
+            </span>
+          )}
+        </div>
+
+        <h1 className="mt-4 text-3xl font-bold md:text-4xl">{event.title}</h1>
+        <p className="mt-3 text-lg text-wtva-muted">
+          {formatEventDateTime(event.starts_at, event.ends_at)}
+        </p>
+
+        {(event.neighborhood || event.venue) && (
+          <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">
+            {event.venue && (
+              <Link
+                href={`/venues/${event.venue.id}`}
+                className="inline-flex items-center gap-1 font-medium hover:underline"
+              >
+                <MapPin className="h-4 w-4" />
+                {event.venue.name}
+              </Link>
+            )}
+            {event.neighborhood && (
+              <span className="text-wtva-muted">{event.neighborhood}</span>
+            )}
+          </div>
+        )}
+
+        {event.description && (
+          <div className="mt-8 prose prose-invert max-w-none">
+            <p className="whitespace-pre-wrap text-wtva-muted leading-relaxed">
+              {event.description}
+            </p>
+          </div>
+        )}
+
+        <div className="mt-10 flex flex-wrap gap-3">
+          {event.venue_id && (
+            <Link
+              href={user ? `/check-in?venue=${event.venue_id}` : `/auth/login?next=/events/${id}`}
+              className="rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background"
+            >
+              Check in at venue
+            </Link>
+          )}
+          {event.venue && (
+            <Link
+              href={`/venues/${event.venue.id}`}
+              className="rounded-lg border border-wtva-dark-300 px-6 py-3 text-sm font-semibold hover:border-foreground"
+            >
+              View venue
+            </Link>
+          )}
+        </div>
+
+        {vipPackages.length > 0 && (
+          <section className="mt-12">
+            <h2 className="text-xl font-bold">VIP packages</h2>
+            <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+              {vipPackages.map((pkg) => (
+                <li
+                  key={pkg.id}
+                  className="rounded-xl border border-wtva-dark-300 bg-wtva-card p-5 flex flex-col"
+                >
+                  <p className="font-semibold">{pkg.package_name}</p>
+                  <p className="mt-1 text-lg font-bold">{formatPrice(Number(pkg.price))}</p>
+                  {pkg.description && (
+                    <p className="mt-2 text-sm text-wtva-muted flex-1">{pkg.description}</p>
+                  )}
+                  <Link
+                    href={user ? `/checkout/${pkg.id}` : `/auth/login?next=/checkout/${pkg.id}`}
+                    className="mt-4 inline-block rounded-lg bg-foreground px-4 py-2.5 text-center text-sm font-semibold text-background"
+                  >
+                    Buy VIP
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
+    </article>
+  );
+}
