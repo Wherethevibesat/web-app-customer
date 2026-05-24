@@ -1,9 +1,6 @@
 import Link from "next/link";
 
 export function SiteFooter() {
-  const businessUrl =
-    process.env.NEXT_PUBLIC_BUSINESS_APP_URL ?? "http://localhost:3002";
-
   return (
     <footer className="mt-auto border-t border-wtva-dark-300 bg-wtva-dark-400">
       <div className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
@@ -41,9 +38,9 @@ export function SiteFooter() {
               <li><Link href="/privacy" className="hover:text-foreground">Privacy</Link></li>
               <li><Link href="/terms" className="hover:text-foreground">Terms</Link></li>
               <li>
-                <a href={businessUrl} className="hover:text-foreground">
-                  For venue owners
-                </a>
+                <Link href="/for-business" className="hover:text-foreground">
+                  For business
+                </Link>
               </li>
             </ul>
           </div>

@@ -12,9 +12,13 @@ const NAV = [
   { href: "/venues", label: "Venues" },
   { href: "/discover/map", label: "Map" },
   { href: "/ranking", label: "Rankings" },
+  { href: "/for-business", label: "For Business" },
 ];
 
 function isActive(pathname: string, href: string) {
+  if (href === "/for-business") {
+    return pathname === "/for-business" || pathname.startsWith("/for-business/");
+  }
   if (href === "/discover") {
     return pathname === "/" || pathname === "/discover" || pathname.startsWith("/discover/");
   }

@@ -70,6 +70,12 @@ function LoginForm() {
           Create a free account
         </Link>
       </p>
+      <p className="mt-4 text-center text-sm text-wtva-muted">
+        Venue or event host?{" "}
+        <Link href="/for-business" className="font-medium text-foreground underline">
+          For Business
+        </Link>
+      </p>
     </AuthCard>
   );
 }
