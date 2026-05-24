@@ -113,14 +113,30 @@ export async function resolveNeighborhoodName(
   slug: string | undefined,
 ): Promise<string | undefined> {
   if (!slug?.trim()) return undefined;
-  const target = slug.trim().toLowerCase();
+  const names = await resolveNeighborhoodNames([slug]);
+  return names[0];
+}
+
+export async function resolveNeighborhoodNames(
+  slugs: string[] | undefined,
+): Promise<string[]> {
+  if (!slugs?.length) return [];
+  const uniqueSlugs = [...new Set(slugs.map((slug) => slug.trim().toLowerCase()).filter(Boolean))];
+  if (uniqueSlugs.length === 0) return [];
+
   try {
     const rows = await listPublicNeighborhoods();
-    const match = rows.find((r) => r.slug.toLowerCase() === target);
-    if (match) return match.name;
+    if (rows.length > 0) {
+      return uniqueSlugs
+        .map((slug) => rows.find((row) => row.slug.toLowerCase() === slug)?.name)
+        .filter((name): name is string => Boolean(name));
+    }
   } catch {
     // fall through
   }
+
   const groups = await listNeighborhoodGroups();
-  return groups.find((g) => g.slug.toLowerCase() === target)?.name;
+  return uniqueSlugs
+    .map((slug) => groups.find((group) => group.slug.toLowerCase() === slug)?.name)
+    .filter((name): name is string => Boolean(name));
 }

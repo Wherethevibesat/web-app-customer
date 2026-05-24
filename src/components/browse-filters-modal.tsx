@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { mergeEventTypes } from "@/lib/event-types";
-import { buildBrowseUrl, type BrowseFilters } from "@/lib/filter-url";
+import {
+  buildBrowseUrl,
+  toggleNeighborhoodSlug,
+  type BrowseFilters,
+} from "@/lib/filter-url";
+import { toggleDayOfWeek, WEEKDAYS } from "@/lib/weekdays";
 import { cn } from "@/lib/utils";
 
 type BrowseFiltersModalProps = {
@@ -17,6 +22,7 @@ type BrowseFiltersModalProps = {
   showFeatured?: boolean;
   showEventTypes?: boolean;
   showNeighborhoods?: boolean;
+  showDayOfWeek?: boolean;
 };
 
 function FilterChip({
@@ -44,6 +50,15 @@ function FilterChip({
   );
 }
 
+function draftHasSelection(draft: BrowseFilters): boolean {
+  return Boolean(
+    draft.type ||
+      draft.featured ||
+      draft.days?.length ||
+      draft.neighborhoods?.length,
+  );
+}
+
 export function BrowseFiltersModal({
   open,
   onClose,
@@ -54,11 +69,22 @@ export function BrowseFiltersModal({
   showFeatured = false,
   showEventTypes = true,
   showNeighborhoods = true,
+  showDayOfWeek = false,
 }: BrowseFiltersModalProps) {
   const router = useRouter();
   const types = mergeEventTypes(eventTypes);
-  const eventsRef = useRef<HTMLDivElement>(null);
-  const areasRef = useRef<HTMLDivElement>(null);
+  const [draft, setDraft] = useState<BrowseFilters>(filters);
+
+  useEffect(() => {
+    if (!open) return;
+    setDraft({
+      type: filters.type,
+      neighborhoods: filters.neighborhoods,
+      featured: filters.featured,
+      days: filters.days,
+      q: filters.q,
+    });
+  }, [open, filters]);
 
   useEffect(() => {
     if (!open) return;
@@ -75,30 +101,36 @@ export function BrowseFiltersModal({
 
   if (!open) return null;
 
-  function apply(next: BrowseFilters) {
+  function applyDraft() {
     onClose();
-    router.push(buildBrowseUrl(basePath, next));
+    router.push(buildBrowseUrl(basePath, draft));
   }
 
-  const hasActive = Boolean(filters.type || filters.neighborhood || filters.featured);
+  function clearDraft() {
+    setDraft({ q: filters.q });
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center md:items-center md:p-4">
+    <div className="fixed inset-0 z-50 flex items-end">
       <button
         type="button"
         className="absolute inset-0 bg-black/60"
         aria-label="Close filters"
         onClick={onClose}
       />
-      <div
-        className={cn(
-          "relative z-10 flex w-full flex-col bg-wtva-dark-400 md:max-w-lg md:rounded-2xl md:border md:border-wtva-dark-300",
-          "max-h-[80vh] rounded-t-2xl border-t border-wtva-dark-300",
-        )}
-      >
-        <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-wtva-dark-300 md:hidden" />
-        <div className="flex items-center justify-between px-5 pb-2 pt-3 md:pt-4">
-          <h2 className="text-lg font-extrabold">Filters</h2>
+      <div className="relative z-10 flex max-h-[90vh] w-full flex-col rounded-t-2xl border-t border-wtva-dark-300 bg-wtva-dark-400">
+        <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-wtva-dark-300" />
+        <div className="flex w-full items-center gap-2 px-5 pb-2 pt-3 md:px-8 md:pt-4">
+          <h2 className="flex-1 text-lg font-extrabold">Filters</h2>
+          {draftHasSelection(draft) && (
+            <button
+              type="button"
+              onClick={clearDraft}
+              className="text-sm font-semibold text-wtva-muted hover:text-foreground"
+            >
+              Clear all
+            </button>
+          )}
           <button
             type="button"
             onClick={onClose}
@@ -109,32 +141,32 @@ export function BrowseFiltersModal({
           </button>
         </div>
 
-        <div className="overflow-y-auto px-5 pb-6 pt-2">
+        <div className="w-full overflow-y-auto px-5 pb-4 pt-2 md:px-8">
           {showEventTypes && (
-            <div ref={eventsRef}>
+            <div>
               <h3 className="text-sm font-bold">Event type</h3>
               <div className="mt-3 flex flex-wrap gap-2">
                 <FilterChip
                   label="All"
-                  active={!filters.type && !filters.featured}
+                  active={!draft.type && !draft.featured}
                   onClick={() =>
-                    apply({
-                      ...filters,
+                    setDraft((prev) => ({
+                      ...prev,
                       type: undefined,
                       featured: undefined,
-                    })
+                    }))
                   }
                 />
                 {showFeatured && (
                   <FilterChip
                     label="Featured"
-                    active={Boolean(filters.featured && !filters.type)}
+                    active={Boolean(draft.featured && !draft.type)}
                     onClick={() =>
-                      apply({
-                        ...filters,
+                      setDraft((prev) => ({
+                        ...prev,
                         featured: true,
                         type: undefined,
-                      })
+                      }))
                     }
                   />
                 )}
@@ -142,13 +174,45 @@ export function BrowseFiltersModal({
                   <FilterChip
                     key={type}
                     label={type}
-                    active={filters.type === type}
+                    active={draft.type === type}
                     onClick={() =>
-                      apply({
-                        ...filters,
+                      setDraft((prev) => ({
+                        ...prev,
                         type,
                         featured: false,
-                      })
+                      }))
+                    }
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {showDayOfWeek && (
+            <div className={showEventTypes ? "mt-6" : undefined}>
+              <h3 className="text-sm font-bold">Day of week</h3>
+              <p className="mt-1 text-xs text-wtva-muted">Select one or more days</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <FilterChip
+                  label="Any day"
+                  active={!draft.days?.length}
+                  onClick={() =>
+                    setDraft((prev) => ({
+                      ...prev,
+                      days: undefined,
+                    }))
+                  }
+                />
+                {WEEKDAYS.map((day) => (
+                  <FilterChip
+                    key={day.id}
+                    label={day.shortLabel}
+                    active={draft.days?.includes(day.id) ?? false}
+                    onClick={() =>
+                      setDraft((prev) => ({
+                        ...prev,
+                        days: toggleDayOfWeek(prev.days, day.id),
+                      }))
                     }
                   />
                 ))}
@@ -157,29 +221,30 @@ export function BrowseFiltersModal({
           )}
 
           {showNeighborhoods && neighborhoods.length > 0 && (
-            <div ref={areasRef} className={showEventTypes ? "mt-6" : undefined}>
+            <div className={showEventTypes || showDayOfWeek ? "mt-6" : undefined}>
               <h3 className="text-sm font-bold">Neighborhood</h3>
+              <p className="mt-1 text-xs text-wtva-muted">Select one or more areas</p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <FilterChip
                   label="All areas"
-                  active={!filters.neighborhood}
+                  active={!draft.neighborhoods?.length}
                   onClick={() =>
-                    apply({
-                      ...filters,
-                      neighborhood: undefined,
-                    })
+                    setDraft((prev) => ({
+                      ...prev,
+                      neighborhoods: undefined,
+                    }))
                   }
                 />
                 {neighborhoods.map((n) => (
                   <FilterChip
                     key={n.slug}
                     label={n.name}
-                    active={filters.neighborhood === n.slug}
+                    active={draft.neighborhoods?.includes(n.slug) ?? false}
                     onClick={() =>
-                      apply({
-                        ...filters,
-                        neighborhood: n.slug,
-                      })
+                      setDraft((prev) => ({
+                        ...prev,
+                        neighborhoods: toggleNeighborhoodSlug(prev.neighborhoods, n.slug),
+                      }))
                     }
                   />
                 ))}
@@ -188,24 +253,15 @@ export function BrowseFiltersModal({
           )}
         </div>
 
-        {hasActive && (
-          <div className="border-t border-wtva-dark-300 px-5 py-4">
-            <button
-              type="button"
-              onClick={() =>
-                apply({
-                  q: filters.q,
-                  type: undefined,
-                  neighborhood: undefined,
-                  featured: undefined,
-                })
-              }
-              className="text-sm font-semibold text-wtva-muted hover:text-foreground"
-            >
-              Clear all filters
-            </button>
-          </div>
-        )}
+        <div className="border-t border-wtva-dark-300 px-5 py-4 md:px-8">
+          <button
+            type="button"
+            onClick={applyDraft}
+            className="w-full rounded-xl bg-foreground py-3.5 text-sm font-bold text-background hover:opacity-90"
+          >
+            Apply filters
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -8,17 +8,19 @@ import {
 } from "@/lib/data/events";
 import {
   listNeighborhoodOptions,
-  resolveNeighborhoodName,
+  resolveNeighborhoodNames,
 } from "@/lib/data/neighborhoods";
 import { parseBrowseFilters } from "@/lib/filter-url";
+import { weekdayShortLabel } from "@/lib/weekdays";
 
 type EventsBrowseViewProps = {
   basePath?: string;
   searchParams: Promise<{
     type?: string;
-    neighborhood?: string;
+    neighborhood?: string | string[];
     featured?: string;
     q?: string;
+    day?: string | string[];
   }>;
 };
 
@@ -28,27 +30,35 @@ export async function EventsBrowseView({
 }: EventsBrowseViewProps) {
   const raw = await searchParams;
   const filters = parseBrowseFilters(raw);
-  const neighborhoodName = await resolveNeighborhoodName(filters.neighborhood);
+  const neighborhoodNames = await resolveNeighborhoodNames(filters.neighborhoods);
 
   const [events, types, neighborhoods] = await Promise.all([
     listPublishedEvents({
       eventType: filters.type,
-      neighborhood: neighborhoodName,
+      neighborhoods: neighborhoodNames.length ? neighborhoodNames : undefined,
       featuredOnly: filters.featured,
       upcomingOnly: true,
-      limit: 80,
+      limit: 120,
     }).catch(() => []),
     getEventTypes().catch(() => []),
     listNeighborhoodOptions().catch(() => []),
   ]);
 
-  const filtered = filters.q
-    ? filterEventsClient(events, { q: filters.q })
-    : events;
+  const filtered = filterEventsClient(events, {
+    q: filters.q,
+    days: filters.days,
+  });
+
+  const neighborhoodLabelBySlug = new Map(
+    neighborhoods.map((n) => [n.slug, n.name]),
+  );
 
   const activeLabels = [
     filters.type,
-    neighborhoodName,
+    ...(filters.days?.map((day) => weekdayShortLabel(day)) ?? []),
+    ...(filters.neighborhoods?.map(
+      (slug) => neighborhoodLabelBySlug.get(slug) ?? slug,
+    ) ?? []),
     filters.featured ? "Featured" : null,
     filters.q ? `"${filters.q}"` : null,
   ].filter(Boolean);
@@ -57,7 +67,7 @@ export async function EventsBrowseView({
     <div className="mx-auto max-w-7xl px-4 py-10 lg:px-8 lg:py-14">
       <h1 className="text-3xl font-bold tracking-tight md:text-4xl">Events</h1>
       <p className="mt-2 max-w-2xl text-wtva-muted">
-        Parties, concerts, and nightlife happening soon. Filter by type, neighborhood, or search.
+        Parties, concerts, and nightlife happening soon. Filter by type, day, neighborhood, or search.
       </p>
 
       <div className="mt-8">
@@ -68,6 +78,7 @@ export async function EventsBrowseView({
           eventTypes={types}
           showFeatured
           showSearch
+          showDayOfWeek
         />
       </div>
 

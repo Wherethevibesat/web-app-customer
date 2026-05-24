@@ -15,7 +15,7 @@ export default async function VenuesPage({
 }) {
   const raw = await searchParams;
   const filters = parseBrowseFilters(raw);
-  const neighborhoodName = await resolveNeighborhoodName(filters.neighborhood);
+  const neighborhoodName = await resolveNeighborhoodName(filters.neighborhoods?.[0]);
 
   const [venues, neighborhoods] = await Promise.all([
     listVenues({
@@ -38,7 +38,7 @@ export default async function VenuesPage({
       <div className="mt-8">
         <BrowseFiltersBar
           basePath="/venues"
-          filters={{ neighborhood: filters.neighborhood, q: filters.q }}
+          filters={{ neighborhoods: filters.neighborhoods, q: filters.q }}
           neighborhoods={neighborhoods}
           showSearch
           showEventTypes={false}

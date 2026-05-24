@@ -4,8 +4,14 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { SlidersHorizontal } from "lucide-react";
 import { eventTypeToSlug } from "@/lib/event-types";
-import { buildBrowseUrl, type BrowseFilters } from "@/lib/filter-url";
+import {
+  activeFilterCount,
+  buildBrowseUrl,
+  toggleNeighborhoodSlug,
+  type BrowseFilters,
+} from "@/lib/filter-url";
 import { BrowseFiltersModal } from "@/components/browse-filters-modal";
+import { weekdayShortLabel } from "@/lib/weekdays";
 import { cn } from "@/lib/utils";
 
 type BrowseFiltersBarProps = {
@@ -17,6 +23,7 @@ type BrowseFiltersBarProps = {
   showSearch?: boolean;
   showEventTypes?: boolean;
   showNeighborhoods?: boolean;
+  showDayOfWeek?: boolean;
 };
 
 export function BrowseFiltersBar({
@@ -28,23 +35,21 @@ export function BrowseFiltersBar({
   showSearch = false,
   showEventTypes = true,
   showNeighborhoods = true,
+  showDayOfWeek = false,
 }: BrowseFiltersBarProps) {
   const [modalOpen, setModalOpen] = useState(false);
 
-  const activeNeighborhoodName = useMemo(
-    () =>
-      neighborhoods.find((n) => n.slug === filters.neighborhood)?.name ??
-      filters.neighborhood,
-    [neighborhoods, filters.neighborhood],
+  const neighborhoodNameBySlug = useMemo(
+    () => new Map(neighborhoods.map((n) => [n.slug, n.name])),
+    [neighborhoods],
   );
 
-  const filterCount = [
-    filters.type,
-    filters.neighborhood,
-    showFeatured && filters.featured ? "featured" : null,
-  ].filter(Boolean).length;
+  const filterCount = activeFilterCount(filters);
 
-  const showFilterButton = showEventTypes || (showNeighborhoods && neighborhoods.length > 0);
+  const showFilterButton =
+    showEventTypes ||
+    showDayOfWeek ||
+    (showNeighborhoods && neighborhoods.length > 0);
 
   return (
     <div className="space-y-3">
@@ -53,10 +58,13 @@ export function BrowseFiltersBar({
           {filters.type && (
             <input type="hidden" name="type" value={eventTypeToSlug(filters.type)} />
           )}
-          {filters.neighborhood && (
-            <input type="hidden" name="neighborhood" value={filters.neighborhood} />
-          )}
+          {filters.neighborhoods?.length ? (
+            <input type="hidden" name="neighborhood" value={filters.neighborhoods.join(",")} />
+          ) : null}
           {filters.featured && <input type="hidden" name="featured" value="1" />}
+          {filters.days?.length ? (
+            <input type="hidden" name="day" value={filters.days.join(",")} />
+          ) : null}
           <div className="flex gap-2">
             <input
               name="q"
@@ -113,15 +121,26 @@ export function BrowseFiltersBar({
               })}
             />
           )}
-          {filters.neighborhood && (
+          {filters.days?.map((day) => (
             <ActivePill
-              label={activeNeighborhoodName ?? filters.neighborhood}
+              key={day}
+              label={weekdayShortLabel(day)}
               clearHref={buildBrowseUrl(basePath, {
                 ...filters,
-                neighborhood: undefined,
+                days: filters.days?.filter((value) => value !== day),
               })}
             />
-          )}
+          ))}
+          {filters.neighborhoods?.map((slug) => (
+            <ActivePill
+              key={slug}
+              label={neighborhoodNameBySlug.get(slug) ?? slug}
+              clearHref={buildBrowseUrl(basePath, {
+                ...filters,
+                neighborhoods: toggleNeighborhoodSlug(filters.neighborhoods, slug),
+              })}
+            />
+          ))}
           <Link
             href={buildBrowseUrl(basePath, { q: filters.q })}
             className="text-xs font-semibold text-wtva-muted hover:text-foreground"
@@ -141,6 +160,7 @@ export function BrowseFiltersBar({
         showFeatured={showFeatured}
         showEventTypes={showEventTypes}
         showNeighborhoods={showNeighborhoods}
+        showDayOfWeek={showDayOfWeek}
       />
     </div>
   );

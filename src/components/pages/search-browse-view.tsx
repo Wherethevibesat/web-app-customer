@@ -21,7 +21,7 @@ export async function SearchBrowseView({
 }: SearchBrowseViewProps) {
   const raw = await searchParams;
   const filters = parseBrowseFilters(raw);
-  const neighborhoodName = await resolveNeighborhoodName(filters.neighborhood);
+  const neighborhoodName = await resolveNeighborhoodName(filters.neighborhoods?.[0]);
   const query = filters.q?.trim() ?? "";
   const hasFilters = Boolean(query || filters.type || neighborhoodName);
 

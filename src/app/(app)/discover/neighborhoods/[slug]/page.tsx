@@ -71,7 +71,7 @@ export default async function DiscoverNeighborhoodPage({
           <p className="mt-4 text-sm text-wtva-muted">
             <Link
               href={buildBrowseUrl("/discover/events", {
-                neighborhood: slug,
+                neighborhoods: [slug],
                 type: filters.type,
               })}
               className="underline"

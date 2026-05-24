@@ -1,5 +1,6 @@
 import { mergeEventTypes } from "@/lib/event-types";
 import { createClient } from "@/lib/supabase/server";
+import { isoWeekday } from "@/lib/weekdays";
 
 export interface EventVenue {
   id: string;
@@ -38,6 +39,7 @@ export async function listPublishedEvents(options?: {
   featuredOnly?: boolean;
   eventType?: string;
   neighborhood?: string;
+  neighborhoods?: string[];
   limit?: number;
 }): Promise<Event[]> {
   const supabase = await createClient();
@@ -56,8 +58,13 @@ export async function listPublishedEvents(options?: {
   if (options?.eventType) {
     query = query.eq("event_type", options.eventType);
   }
-  if (options?.neighborhood) {
-    query = query.eq("neighborhood", options.neighborhood);
+  const neighborhoodFilters =
+    options?.neighborhoods?.filter(Boolean) ??
+    (options?.neighborhood ? [options.neighborhood] : undefined);
+  if (neighborhoodFilters?.length === 1) {
+    query = query.eq("neighborhood", neighborhoodFilters[0]);
+  } else if (neighborhoodFilters && neighborhoodFilters.length > 1) {
+    query = query.in("neighborhood", neighborhoodFilters);
   }
   if (options?.limit) {
     query = query.limit(options.limit);
@@ -120,15 +127,29 @@ export async function getEventTypes(): Promise<string[]> {
 
 export function filterEventsClient(
   events: Event[],
-  options?: { q?: string; eventType?: string; neighborhood?: string },
+  options?: {
+    q?: string;
+    eventType?: string;
+    neighborhood?: string;
+    neighborhoods?: string[];
+    days?: number[];
+  },
 ): Event[] {
   let rows = events;
   if (options?.eventType) {
     rows = rows.filter((e) => e.event_type === options.eventType);
   }
-  if (options?.neighborhood) {
-    const target = options.neighborhood.toLowerCase();
-    rows = rows.filter((e) => (e.neighborhood ?? "").toLowerCase() === target);
+  const neighborhoodFilters =
+    options?.neighborhoods?.map((value) => value.toLowerCase()) ??
+    (options?.neighborhood ? [options.neighborhood.toLowerCase()] : undefined);
+  if (neighborhoodFilters?.length) {
+    rows = rows.filter((e) =>
+      neighborhoodFilters.includes((e.neighborhood ?? "").toLowerCase()),
+    );
+  }
+  if (options?.days?.length) {
+    const selected = new Set(options.days);
+    rows = rows.filter((e) => selected.has(isoWeekday(new Date(e.starts_at))));
   }
   if (options?.q?.trim()) {
     const q = options.q.trim().toLowerCase();
@@ -146,18 +167,28 @@ export function filterEventsClient(
 
 export async function searchEvents(
   query: string,
-  options?: { eventType?: string; neighborhood?: string; limit?: number },
+  options?: {
+    eventType?: string;
+    neighborhood?: string;
+    neighborhoods?: string[];
+    days?: number[];
+    limit?: number;
+  },
 ): Promise<Event[]> {
+  const neighborhoodFilters =
+    options?.neighborhoods ??
+    (options?.neighborhood ? [options.neighborhood] : undefined);
   const all = await listPublishedEvents({
     upcomingOnly: true,
     eventType: options?.eventType,
-    neighborhood: options?.neighborhood,
+    neighborhoods: neighborhoodFilters,
     limit: 200,
   });
   return filterEventsClient(all, {
     q: query,
     eventType: options?.eventType,
-    neighborhood: options?.neighborhood,
+    neighborhoods: neighborhoodFilters,
+    days: options?.days,
   }).slice(0, options?.limit ?? 40);
 }
 
