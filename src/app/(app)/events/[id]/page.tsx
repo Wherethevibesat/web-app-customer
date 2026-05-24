@@ -4,6 +4,8 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { MapPin, Calendar } from "lucide-react";
 import { getEvent, listEventVipPackages } from "@/lib/data/events";
+import { listOffersForEvent } from "@/lib/data/promoters";
+import { PromoterOffersSection } from "@/components/promoter-offers-section";
 import {
   listEventTicketTiers,
   userRegistrationForEvent,
@@ -36,7 +38,10 @@ export default async function EventDetailPage({
   const event = await getEvent(id);
   if (!event) notFound();
 
-  const vipPackages = await listEventVipPackages(id);
+  const [vipPackages, promoterOffers] = await Promise.all([
+    listEventVipPackages(id),
+    listOffersForEvent(id),
+  ]);
   const ticketTiers = await listEventTicketTiers(id);
   const publishableKey = await getPublishableKey();
   const supabase = await createClient();
@@ -132,6 +137,12 @@ export default async function EventDetailPage({
           existingRegistration={
             registeredTierName ? { tierName: registeredTierName } : null
           }
+        />
+
+        <PromoterOffersSection
+          eventId={id}
+          offers={promoterOffers}
+          isSignedIn={Boolean(user)}
         />
 
         {vipPackages.length > 0 && (

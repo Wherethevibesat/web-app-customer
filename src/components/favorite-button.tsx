@@ -6,9 +6,11 @@ import { Heart } from "lucide-react";
 export function FavoriteButton({
   venueId,
   initialFavorited,
+  variant = "icon",
 }: {
   venueId: string;
   initialFavorited: boolean;
+  variant?: "icon" | "labeled";
 }) {
   const [favorited, setFavorited] = useState(initialFavorited);
   const [loading, setLoading] = useState(false);
@@ -36,12 +38,17 @@ export function FavoriteButton({
       type="button"
       disabled={loading}
       onClick={toggle}
-      className="rounded-lg border border-wtva-dark-300 p-2"
-      aria-label="Favorite"
+      className={
+        variant === "labeled"
+          ? "inline-flex items-center gap-2 rounded-lg border border-wtva-dark-300 px-6 py-3 text-sm font-semibold hover:border-foreground disabled:opacity-50"
+          : "rounded-lg border border-wtva-dark-300 p-2 disabled:opacity-50"
+      }
+      aria-label={variant === "labeled" ? undefined : "Favorite"}
     >
       <Heart
         className={`h-5 w-5 ${favorited ? "fill-foreground text-foreground" : "text-wtva-muted"}`}
       />
+      {variant === "labeled" ? (favorited ? "Saved" : "Save venue") : null}
     </button>
   );
 }

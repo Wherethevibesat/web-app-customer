@@ -219,3 +219,67 @@ export async function listEventVipPackages(eventId: string): Promise<VipPackage[
   if (error) return [];
   return (data ?? []) as VipPackage[];
 }
+
+export async function listPastEventsByVenue(venueId: string, limit = 6): Promise<Event[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("events")
+    .select(EVENT_SELECT)
+    .eq("venue_id", venueId)
+    .eq("status", "published")
+    .lt("starts_at", new Date().toISOString())
+    .order("starts_at", { ascending: false })
+    .limit(limit);
+  if (error) return [];
+  return (data ?? []).map((row) => ({
+    ...row,
+    venue: venueFromJoin(row.venue as EventVenue | EventVenue[] | null),
+  })) as Event[];
+}
+
+export type VenueVipPackage = VipPackage & {
+  event_id: string;
+  event_title: string;
+};
+
+export async function listVenueVipPackages(venueId: string): Promise<VenueVipPackage[]> {
+  const supabase = await createClient();
+  const { data: events } = await supabase
+    .from("events")
+    .select("id, title")
+    .eq("venue_id", venueId)
+    .eq("status", "published")
+    .gte("starts_at", new Date().toISOString());
+
+  if (!events?.length) return [];
+
+  const eventTitles = new Map(events.map((event) => [event.id as string, event.title as string]));
+  const eventIds = events.map((event) => event.id as string);
+
+  const { data, error } = await supabase
+    .from("vip_packages")
+    .select("id, package_name, description, price, benefits, image_url, event_id")
+    .in("event_id", eventIds)
+    .eq("is_active", true)
+    .order("price");
+
+  if (error) return [];
+
+  return (data ?? [])
+    .map((row) => {
+      const eventId = row.event_id as string;
+      const eventTitle = eventTitles.get(eventId);
+      if (!eventTitle) return null;
+      return {
+        id: row.id as string,
+        package_name: row.package_name as string,
+        description: (row.description as string | null) ?? null,
+        price: Number(row.price),
+        benefits: row.benefits,
+        image_url: (row.image_url as string | null) ?? null,
+        event_id: eventId,
+        event_title: eventTitle,
+      };
+    })
+    .filter((pkg): pkg is VenueVipPackage => pkg !== null);
+}

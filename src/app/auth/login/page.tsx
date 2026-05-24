@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { AuthCard } from "@/components/auth-card";
+import { BusinessAccountLinks } from "@/components/auth/business-account-links";
 import { createClient } from "@/lib/supabase/client";
 
 function LoginForm() {
@@ -31,7 +32,7 @@ function LoginForm() {
   }
 
   return (
-    <AuthCard title="Welcome back" subtitle="Sign in to check in, save favorites, and climb the ranks">
+    <AuthCard title="Welcome back" subtitle="Customer sign in — check in, save favorites, and climb the ranks">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="mb-1 block text-xs text-wtva-muted">Email</label>
@@ -67,15 +68,10 @@ function LoginForm() {
       <p className="mt-6 text-center text-sm text-wtva-muted">
         New here?{" "}
         <Link href="/auth/register" className="font-medium text-foreground underline">
-          Create a free account
+          Create a free customer account
         </Link>
       </p>
-      <p className="mt-4 text-center text-sm text-wtva-muted">
-        Venue or event host?{" "}
-        <Link href="/for-business" className="font-medium text-foreground underline">
-          For Business
-        </Link>
-      </p>
+      <BusinessAccountLinks />
     </AuthCard>
   );
 }

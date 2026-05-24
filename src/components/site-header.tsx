@@ -10,6 +10,7 @@ const NAV = [
   { href: "/discover", label: "Discover" },
   { href: "/discover/events", label: "Events" },
   { href: "/venues", label: "Venues" },
+  { href: "/promoters", label: "Promoters" },
   { href: "/drivers", label: "Find Driver" },
   { href: "/discover/map", label: "Map" },
   { href: "/for-business", label: "For Business" },
@@ -21,6 +22,9 @@ function isActive(pathname: string, href: string) {
   }
   if (href === "/drivers") {
     return pathname === "/drivers" || pathname.startsWith("/drivers/");
+  }
+  if (href === "/promoters") {
+    return pathname === "/promoters" || pathname.startsWith("/promoters/");
   }
   if (href === "/discover") {
     return pathname === "/" || pathname === "/discover" || pathname.startsWith("/discover/");

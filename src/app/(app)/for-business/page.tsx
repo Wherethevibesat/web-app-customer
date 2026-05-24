@@ -17,9 +17,9 @@ const BUSINESS_TYPES = [
     id: "promoters",
     title: "Promoters",
     description:
-      "Promote events, manage guest lists, and partner with venues. Promoter tools are on the way.",
+      "Sell tables and VIP sections at partner venues. Request venue access, create offers, and manage customer inquiries.",
     icon: Megaphone,
-    available: false,
+    available: true,
   },
   {
     id: "drivers",
@@ -36,6 +36,7 @@ export default async function ForBusinessPage() {
   const loginUrl = getBusinessPortalUrl("/auth/login", host);
   const registerUrl = getBusinessPortalUrl("/auth/register", host);
   const driverRegisterUrl = getBusinessPortalUrl("/auth/register?role=driver", host);
+  const promoterRegisterUrl = getBusinessPortalUrl("/auth/register?role=promoter", host);
 
   return (
     <PageShell
@@ -70,7 +71,13 @@ export default async function ForBusinessPage() {
                   Sign in
                 </a>
                 <a
-                  href={id === "drivers" ? driverRegisterUrl : registerUrl}
+                  href={
+                    id === "drivers"
+                      ? driverRegisterUrl
+                      : id === "promoters"
+                        ? promoterRegisterUrl
+                        : registerUrl
+                  }
                   className="inline-flex justify-center rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background"
                 >
                   Create account

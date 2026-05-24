@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -5,9 +6,47 @@ import { FavoriteButton } from "@/components/favorite-button";
 import { VenueDetailsExtra } from "@/components/venue-details-extra";
 import { MessageVenueButton } from "@/components/message-venue-button";
 import { EventCard } from "@/components/event-card";
-import { getVenue } from "@/lib/data/venues";
-import { listEventsByVenue } from "@/lib/data/events";
+import { VenueCard } from "@/components/venue-card";
+import { DriverCompanyCard } from "@/components/driver-company-card";
+import { VenueQuickInfo } from "@/components/venue-quick-info";
+import { VenuePromoterCard } from "@/components/venue-promoter-card";
+import { VenueShareButton } from "@/components/venue-share-button";
+import { VenueTablesSection } from "@/components/venue-tables-section";
+import { VenueVipPackagesSection } from "@/components/venue-vip-packages-section";
+import { getVenue, listRelatedVenues } from "@/lib/data/venues";
+import {
+  listEventsByVenue,
+  listPastEventsByVenue,
+  listVenueVipPackages,
+} from "@/lib/data/events";
+import { listOffersForVenue, listPromotersForVenue } from "@/lib/data/promoters";
+import { listPublishedDrivers } from "@/lib/data/drivers";
+import { formatEventDateTime } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const venue = await getVenue(id);
+  if (!venue) return { title: "Venue not found" };
+
+  const description =
+    venue.description?.slice(0, 160) ??
+    `${venue.venue_type} in ${venue.neighborhood ?? "Houston"}. Events, VIP, and check-ins on WTVA.`;
+
+  return {
+    title: venue.name,
+    description,
+    openGraph: {
+      title: venue.name,
+      description,
+      ...(venue.image_url ? { images: [{ url: venue.image_url }] } : {}),
+    },
+  };
+}
 
 export default async function VenueDetailPage({
   params,
@@ -15,14 +54,32 @@ export default async function VenueDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const [venue, venueEvents] = await Promise.all([
-    getVenue(id),
-    listEventsByVenue(id),
-  ]);
+  const venue = await getVenue(id);
   if (!venue) notFound();
 
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const [
+    venueEvents,
+    pastEvents,
+    promoters,
+    promoterOffers,
+    vipPackages,
+    relatedVenues,
+    drivers,
+    supabase,
+  ] = await Promise.all([
+    listEventsByVenue(id),
+    listPastEventsByVenue(id),
+    listPromotersForVenue(id),
+    listOffersForVenue(id),
+    listVenueVipPackages(id),
+    listRelatedVenues(venue),
+    listPublishedDrivers({ city: "Houston" }),
+    createClient(),
+  ]);
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   let favorited = false;
   if (user) {
     const { data } = await supabase
@@ -34,6 +91,8 @@ export default async function VenueDetailPage({
     favorited = !!data;
   }
 
+  const venuePath = `/venues/${id}`;
+
   return (
     <article>
       <div className="relative aspect-[21/9] max-h-[400px] w-full bg-wtva-dark-400">
@@ -44,7 +103,11 @@ export default async function VenueDetailPage({
       </div>
 
       <div className="mx-auto max-w-4xl px-4 py-10 lg:px-8">
-        <div className="flex flex-wrap items-start justify-between gap-4">
+        <Link href="/venues" className="text-sm text-wtva-muted hover:text-foreground">
+          ← All venues
+        </Link>
+
+        <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-medium text-wtva-muted">{venue.venue_type}</p>
             <h1 className="mt-1 text-3xl font-bold md:text-4xl">{venue.name}</h1>
@@ -52,32 +115,124 @@ export default async function VenueDetailPage({
               <p className="mt-2 text-wtva-muted">{venue.neighborhood}</p>
             )}
           </div>
-          {user && <FavoriteButton venueId={id} initialFavorited={favorited} />}
         </div>
 
-        {venue.description && (
-          <p className="mt-6 text-wtva-muted leading-relaxed">{venue.description}</p>
-        )}
-        {venue.address && <p className="mt-2">{venue.address}</p>}
+        <VenueQuickInfo venue={venue} />
+
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold">About</h2>
+          {venue.description ? (
+            <p className="mt-3 text-wtva-muted leading-relaxed">{venue.description}</p>
+          ) : (
+            <p className="mt-3 text-sm text-wtva-muted">
+              Venue details coming soon. Follow for updates or message the venue owner.
+            </p>
+          )}
+        </section>
 
         <VenueDetailsExtra venue={venue} />
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
-            href={user ? `/check-in?venue=${id}` : `/auth/login?next=/venues/${id}`}
+            href={user ? `/check-in?venue=${id}` : `/auth/login?next=${encodeURIComponent(venuePath)}`}
             className="rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background"
           >
             Check in (+25 pts)
           </Link>
+          <FavoriteButton
+            venueId={id}
+            initialFavorited={favorited}
+            variant="labeled"
+          />
           <MessageVenueButton venueId={id} venueName={venue.name} signedIn={!!user} />
+          <VenueShareButton venueName={venue.name} venuePath={venuePath} />
         </div>
+
+        {promoters.length > 0 && (
+          <section className="mt-12">
+            <h2 className="text-xl font-bold">Promoters at this venue</h2>
+            <p className="mt-2 text-sm text-wtva-muted">
+              Book tables and VIP through approved WTVA promoters.
+            </p>
+            <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+              {promoters.map((promoter) => (
+                <li key={promoter.user_id}>
+                  <VenuePromoterCard promoter={promoter} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         {venueEvents.length > 0 && (
           <section className="mt-12">
-            <h2 className="text-xl font-bold">Upcoming events here</h2>
+            <h2 className="text-xl font-bold">Upcoming events</h2>
             <div className="mt-6 grid gap-6 sm:grid-cols-2">
-              {venueEvents.map((e) => (
-                <EventCard key={e.id} event={e} />
+              {venueEvents.map((event) => (
+                <EventCard key={event.id} event={event} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        <VenueTablesSection
+          venueId={id}
+          offers={promoterOffers}
+          isSignedIn={!!user}
+        />
+
+        <VenueVipPackagesSection packages={vipPackages} isSignedIn={!!user} />
+
+        {pastEvents.length > 0 && (
+          <section className="mt-12">
+            <h2 className="text-xl font-bold">Recent events</h2>
+            <ul className="mt-4 space-y-2">
+              {pastEvents.map((event) => (
+                <li key={event.id}>
+                  <Link
+                    href={`/events/${event.id}`}
+                    className="block rounded-xl border border-wtva-dark-300 bg-wtva-card px-4 py-3 hover:border-wtva-muted"
+                  >
+                    <p className="font-medium">{event.title}</p>
+                    <p className="text-sm text-wtva-muted">
+                      {formatEventDateTime(event.starts_at)}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {relatedVenues.length > 0 && (
+          <section className="mt-12">
+            <h2 className="text-xl font-bold">
+              {venue.neighborhood ? `More in ${venue.neighborhood}` : "Related venues"}
+            </h2>
+            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {relatedVenues.map((related) => (
+                <VenueCard key={related.id} venue={related} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {drivers.length > 0 && (
+          <section className="mt-12">
+            <div className="flex flex-wrap items-end justify-between gap-3">
+              <div>
+                <h2 className="text-xl font-bold">Book a ride</h2>
+                <p className="mt-2 text-sm text-wtva-muted">
+                  Party buses and private drivers for your night out.
+                </p>
+              </div>
+              <Link href="/drivers" className="text-sm font-medium hover:underline">
+                View all drivers
+              </Link>
+            </div>
+            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {drivers.slice(0, 3).map((company) => (
+                <DriverCompanyCard key={company.id} company={company} />
               ))}
             </div>
           </section>

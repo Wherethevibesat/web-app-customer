@@ -87,7 +87,7 @@ export async function confirmDriverBookingPayment(params: {
   bookingId: string;
   userId: string;
   paymentIntentId: string;
-}) {
+}): Promise<{ updated: boolean }> {
   const admin = createAdminClient();
   const now = new Date().toISOString();
 
@@ -103,7 +103,7 @@ export async function confirmDriverBookingPayment(params: {
     existing.stripe_payment_intent_id === params.paymentIntentId &&
     existing.status === "pending_driver"
   ) {
-    return;
+    return { updated: false };
   }
   if (existing.status !== "pending_payment") {
     throw new Error("Booking cannot be confirmed");
@@ -120,4 +120,5 @@ export async function confirmDriverBookingPayment(params: {
     .eq("customer_id", params.userId);
 
   if (error) throw error;
+  return { updated: true };
 }

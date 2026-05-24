@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AuthCard } from "@/components/auth-card";
+import { BusinessAccountLinks } from "@/components/auth/business-account-links";
 import { createClient } from "@/lib/supabase/client";
 
 export default function RegisterPage() {
@@ -35,8 +36,8 @@ export default function RegisterPage() {
 
   return (
     <AuthCard
-      title="Join the vibes"
-      subtitle="Discover events, check in at venues, and earn ranking points"
+      title="Join free"
+      subtitle="Create a customer account to discover events, check in at venues, and earn points"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -75,9 +76,10 @@ export default function RegisterPage() {
           disabled={loading}
           className="w-full rounded-lg bg-foreground py-3 text-sm font-semibold text-background disabled:opacity-50"
         >
-          {loading ? "Creating account…" : "Create account"}
+          {loading ? "Creating account…" : "Create customer account"}
         </button>
       </form>
+      <BusinessAccountLinks />
       <p className="mt-4 text-center text-xs text-wtva-subtle">
         By signing up you agree to our{" "}
         <Link href="/terms" className="underline">
