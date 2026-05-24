@@ -1,4 +1,5 @@
 import { mergeEventTypes } from "@/lib/event-types";
+import { activeEventsOrFilter, eventIsActive, pastEventsOrFilter } from "@/lib/event-visibility";
 import { createClient } from "@/lib/supabase/server";
 import { isoWeekday } from "@/lib/weekdays";
 import { eventStartsOnLocalDate, type EventDateIso } from "@/lib/event-dates";
@@ -51,7 +52,7 @@ export async function listPublishedEvents(options?: {
     .order("starts_at", { ascending: true });
 
   if (options?.upcomingOnly !== false) {
-    query = query.gte("starts_at", new Date().toISOString());
+    query = query.or(activeEventsOrFilter());
   }
   if (options?.featuredOnly) {
     query = query.eq("featured", true);
@@ -81,10 +82,14 @@ export async function listPublishedEvents(options?: {
     return (fallback.data ?? []) as Event[];
   }
 
-  return (data ?? []).map((row) => ({
-    ...row,
-    venue: venueFromJoin(row.venue as EventVenue | EventVenue[] | null),
-  })) as Event[];
+  return (data ?? [])
+    .map((row) => ({
+      ...row,
+      venue: venueFromJoin(row.venue as EventVenue | EventVenue[] | null),
+    }))
+    .filter((row) =>
+      options?.upcomingOnly === false ? true : eventIsActive(row as Event),
+    ) as Event[];
 }
 
 export async function listEventsByVenue(venueId: string): Promise<Event[]> {
@@ -94,14 +99,16 @@ export async function listEventsByVenue(venueId: string): Promise<Event[]> {
     .select(EVENT_SELECT)
     .eq("venue_id", venueId)
     .eq("status", "published")
-    .gte("starts_at", new Date().toISOString())
+    .or(activeEventsOrFilter())
     .order("starts_at", { ascending: true })
     .limit(12);
   if (error) return [];
-  return (data ?? []).map((row) => ({
-    ...row,
-    venue: venueFromJoin(row.venue as EventVenue | EventVenue[] | null),
-  })) as Event[];
+  return (data ?? [])
+    .map((row) => ({
+      ...row,
+      venue: venueFromJoin(row.venue as EventVenue | EventVenue[] | null),
+    }))
+    .filter((row) => eventIsActive(row as Event)) as Event[];
 }
 
 export async function getEvent(id: string): Promise<Event | null> {
@@ -227,7 +234,7 @@ export async function listPastEventsByVenue(venueId: string, limit = 6): Promise
     .select(EVENT_SELECT)
     .eq("venue_id", venueId)
     .eq("status", "published")
-    .lt("starts_at", new Date().toISOString())
+    .or(pastEventsOrFilter())
     .order("starts_at", { ascending: false })
     .limit(limit);
   if (error) return [];
@@ -249,7 +256,7 @@ export async function listVenueVipPackages(venueId: string): Promise<VenueVipPac
     .select("id, title")
     .eq("venue_id", venueId)
     .eq("status", "published")
-    .gte("starts_at", new Date().toISOString());
+    .or(activeEventsOrFilter());
 
   if (!events?.length) return [];
 

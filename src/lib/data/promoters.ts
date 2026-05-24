@@ -1,3 +1,4 @@
+import { activeEventsOrFilter } from "@/lib/event-visibility";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { isUuid } from "@/lib/promoter-slug";
@@ -419,7 +420,7 @@ export async function listOffersForVenue(venueId: string): Promise<VenuePromoter
     .select("id, title, status, promoter_event_approval")
     .eq("venue_id", venueId)
     .eq("status", "published")
-    .gte("starts_at", new Date().toISOString());
+    .or(activeEventsOrFilter());
 
   const visibleEvents = (events ?? []).filter((event) =>
     eventIsCustomerVisible(event as { status: string; promoter_event_approval: string }),
