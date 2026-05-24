@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { FavoriteButton } from "@/components/favorite-button";
+import { VenueDetailsExtra } from "@/components/venue-details-extra";
 import { MessageVenueButton } from "@/components/message-venue-button";
 import { EventCard } from "@/components/event-card";
 import { getVenue } from "@/lib/data/venues";
@@ -58,9 +59,8 @@ export default async function VenueDetailPage({
           <p className="mt-6 text-wtva-muted leading-relaxed">{venue.description}</p>
         )}
         {venue.address && <p className="mt-2">{venue.address}</p>}
-        {venue.hours_label && (
-          <p className="mt-2 text-sm text-wtva-muted">{venue.hours_label}</p>
-        )}
+
+        <VenueDetailsExtra venue={venue} />
 
         <div className="mt-8 flex flex-wrap gap-3">
           <Link

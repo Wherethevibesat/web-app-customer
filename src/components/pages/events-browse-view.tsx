@@ -12,6 +12,7 @@ import {
 } from "@/lib/data/neighborhoods";
 import { parseBrowseFilters } from "@/lib/filter-url";
 import { weekdayShortLabel } from "@/lib/weekdays";
+import { formatEventDateLabel } from "@/lib/event-dates";
 
 type EventsBrowseViewProps = {
   basePath?: string;
@@ -21,6 +22,7 @@ type EventsBrowseViewProps = {
     featured?: string;
     q?: string;
     day?: string | string[];
+    date?: string | string[];
   }>;
 };
 
@@ -47,6 +49,7 @@ export async function EventsBrowseView({
   const filtered = filterEventsClient(events, {
     q: filters.q,
     days: filters.days,
+    date: filters.date,
   });
 
   const neighborhoodLabelBySlug = new Map(
@@ -56,6 +59,7 @@ export async function EventsBrowseView({
   const activeLabels = [
     filters.type,
     ...(filters.days?.map((day) => weekdayShortLabel(day)) ?? []),
+    ...(filters.date ? [formatEventDateLabel(filters.date)] : []),
     ...(filters.neighborhoods?.map(
       (slug) => neighborhoodLabelBySlug.get(slug) ?? slug,
     ) ?? []),
@@ -79,6 +83,7 @@ export async function EventsBrowseView({
           showFeatured
           showSearch
           showDayOfWeek
+          showDatePicker
         />
       </div>
 

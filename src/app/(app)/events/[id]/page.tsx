@@ -4,7 +4,13 @@ import Image from "next/image";
 import { notFound } from "next/navigation";
 import { MapPin, Calendar } from "lucide-react";
 import { getEvent, listEventVipPackages } from "@/lib/data/events";
+import {
+  listEventTicketTiers,
+  userRegistrationForEvent,
+} from "@/lib/data/event-tickets";
 import { formatEventDateTime, formatPrice } from "@/lib/format";
+import { getPublishableKey } from "@/lib/stripe/server";
+import { EventTicketsSection } from "@/components/event-tickets-section";
 import { createClient } from "@/lib/supabase/server";
 
 export async function generateMetadata({
@@ -31,8 +37,18 @@ export default async function EventDetailPage({
   if (!event) notFound();
 
   const vipPackages = await listEventVipPackages(id);
+  const ticketTiers = await listEventTicketTiers(id);
+  const publishableKey = await getPublishableKey();
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  const existingRegistration = user
+    ? await userRegistrationForEvent(user.id, id)
+    : null;
+  const registeredTierName =
+    existingRegistration?.event_ticket_tiers &&
+    (Array.isArray(existingRegistration.event_ticket_tiers)
+      ? existingRegistration.event_ticket_tiers[0]?.name
+      : (existingRegistration.event_ticket_tiers as { name: string }).name);
 
   return (
     <article>
@@ -107,6 +123,16 @@ export default async function EventDetailPage({
             </Link>
           )}
         </div>
+
+        <EventTicketsSection
+          eventId={id}
+          tiers={ticketTiers}
+          publishableKey={publishableKey}
+          isSignedIn={Boolean(user)}
+          existingRegistration={
+            registeredTierName ? { tierName: registeredTierName } : null
+          }
+        />
 
         {vipPackages.length > 0 && (
           <section className="mt-12">

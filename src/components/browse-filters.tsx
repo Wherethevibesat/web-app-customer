@@ -10,6 +10,8 @@ import {
   toggleNeighborhoodSlug,
   type BrowseFilters,
 } from "@/lib/filter-url";
+import { formatEventDateLabel } from "@/lib/event-dates";
+import { BrowseDatePicker } from "@/components/browse-date-picker";
 import { BrowseFiltersModal } from "@/components/browse-filters-modal";
 import { weekdayShortLabel } from "@/lib/weekdays";
 import { cn } from "@/lib/utils";
@@ -24,6 +26,11 @@ type BrowseFiltersBarProps = {
   showEventTypes?: boolean;
   showNeighborhoods?: boolean;
   showDayOfWeek?: boolean;
+  showDatePicker?: boolean;
+  searchPath?: string;
+  searchPlaceholder?: string;
+  modalOpen?: boolean;
+  onModalOpenChange?: (open: boolean) => void;
 };
 
 export function BrowseFiltersBar({
@@ -36,8 +43,16 @@ export function BrowseFiltersBar({
   showEventTypes = true,
   showNeighborhoods = true,
   showDayOfWeek = false,
+  showDatePicker = false,
+  searchPath,
+  searchPlaceholder = "Search within results…",
+  modalOpen: controlledModalOpen,
+  onModalOpenChange,
 }: BrowseFiltersBarProps) {
-  const [modalOpen, setModalOpen] = useState(false);
+  const [internalModalOpen, setInternalModalOpen] = useState(false);
+  const modalOpen = controlledModalOpen ?? internalModalOpen;
+  const setModalOpen = onModalOpenChange ?? setInternalModalOpen;
+  const formAction = searchPath ?? basePath;
 
   const neighborhoodNameBySlug = useMemo(
     () => new Map(neighborhoods.map((n) => [n.slug, n.name])),
@@ -45,6 +60,8 @@ export function BrowseFiltersBar({
   );
 
   const filterCount = activeFilterCount(filters);
+  const hasActivePills =
+    filterCount > 0 || Boolean(filters.date) || Boolean(filters.q);
 
   const showFilterButton =
     showEventTypes ||
@@ -54,7 +71,7 @@ export function BrowseFiltersBar({
   return (
     <div className="space-y-3">
       {showSearch && (
-        <form className="max-w-2xl" method="get">
+        <form className="max-w-2xl" method="get" action={formAction}>
           {filters.type && (
             <input type="hidden" name="type" value={eventTypeToSlug(filters.type)} />
           )}
@@ -65,11 +82,12 @@ export function BrowseFiltersBar({
           {filters.days?.length ? (
             <input type="hidden" name="day" value={filters.days.join(",")} />
           ) : null}
-          <div className="flex gap-2">
+          {filters.date ? <input type="hidden" name="date" value={filters.date} /> : null}
+          <div className="flex flex-wrap gap-2">
             <input
               name="q"
               defaultValue={filters.q ?? ""}
-              placeholder="Search within results…"
+              placeholder={searchPlaceholder}
               className="min-w-0 flex-1 rounded-lg border border-wtva-dark-300 bg-wtva-card px-4 py-2.5 text-sm outline-none focus:border-foreground"
             />
             <button
@@ -78,6 +96,7 @@ export function BrowseFiltersBar({
             >
               Search
             </button>
+            {showDatePicker && <BrowseDatePicker basePath={basePath} filters={filters} />}
             {showFilterButton && (
               <button
                 type="button"
@@ -100,7 +119,31 @@ export function BrowseFiltersBar({
         </form>
       )}
 
-      {filterCount > 0 && (
+      {!showSearch && showDatePicker && (
+        <div className="flex flex-wrap gap-2">
+          <BrowseDatePicker basePath={basePath} filters={filters} />
+          {showFilterButton && (
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className={cn(
+                "relative shrink-0 inline-flex items-center gap-2 rounded-lg border border-wtva-dark-300 bg-wtva-card px-4 py-2.5 text-sm font-semibold hover:border-foreground",
+                filterCount > 0 && "border-foreground/50",
+              )}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              Filters
+              {filterCount > 0 && (
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-bold text-background">
+                  {filterCount}
+                </span>
+              )}
+            </button>
+          )}
+        </div>
+      )}
+
+      {hasActivePills && (
         <div className="flex flex-wrap items-center gap-2">
           {filters.featured && !filters.type && (
             <ActivePill
@@ -131,6 +174,15 @@ export function BrowseFiltersBar({
               })}
             />
           ))}
+          {filters.date && (
+            <ActivePill
+              label={formatEventDateLabel(filters.date)}
+              clearHref={buildBrowseUrl(basePath, {
+                ...filters,
+                date: undefined,
+              })}
+            />
+          )}
           {filters.neighborhoods?.map((slug) => (
             <ActivePill
               key={slug}
@@ -142,10 +194,10 @@ export function BrowseFiltersBar({
             />
           ))}
           <Link
-            href={buildBrowseUrl(basePath, { q: filters.q })}
+            href={buildBrowseUrl(basePath, { q: filters.q, date: filters.date })}
             className="text-xs font-semibold text-wtva-muted hover:text-foreground"
           >
-            Clear all
+            Clear filters
           </Link>
         </div>
       )}

@@ -12,7 +12,13 @@ import { listVenues } from "@/lib/data/venues";
 
 type SearchBrowseViewProps = {
   basePath?: string;
-  searchParams: Promise<{ q?: string; type?: string; neighborhood?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    type?: string;
+    neighborhood?: string | string[];
+    day?: string | string[];
+    date?: string | string[];
+  }>;
 };
 
 export async function SearchBrowseView({
@@ -23,13 +29,21 @@ export async function SearchBrowseView({
   const filters = parseBrowseFilters(raw);
   const neighborhoodName = await resolveNeighborhoodName(filters.neighborhoods?.[0]);
   const query = filters.q?.trim() ?? "";
-  const hasFilters = Boolean(query || filters.type || neighborhoodName);
+  const hasFilters = Boolean(
+    query ||
+      filters.type ||
+      neighborhoodName ||
+      filters.date ||
+      filters.days?.length,
+  );
 
   const [events, allVenues, types, neighborhoods] = await Promise.all([
     hasFilters
       ? searchEvents(query, {
           eventType: filters.type,
           neighborhood: neighborhoodName,
+          days: filters.days,
+          date: filters.date,
           limit: 40,
         })
       : Promise.resolve([]),
@@ -52,11 +66,14 @@ export async function SearchBrowseView({
 
       <div className="mt-6">
         <BrowseFiltersBar
-          basePath={basePath}
+          basePath="/discover/events"
+          searchPath={basePath}
           filters={filters}
           neighborhoods={neighborhoods}
           eventTypes={types}
           showSearch
+          showDayOfWeek
+          showDatePicker
         />
       </div>
 

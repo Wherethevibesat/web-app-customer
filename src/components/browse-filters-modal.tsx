@@ -82,6 +82,7 @@ export function BrowseFiltersModal({
       neighborhoods: filters.neighborhoods,
       featured: filters.featured,
       days: filters.days,
+      date: filters.date,
       q: filters.q,
     });
   }, [open, filters]);
@@ -107,7 +108,7 @@ export function BrowseFiltersModal({
   }
 
   function clearDraft() {
-    setDraft({ q: filters.q });
+    setDraft({ q: filters.q, date: filters.date });
   }
 
   return (

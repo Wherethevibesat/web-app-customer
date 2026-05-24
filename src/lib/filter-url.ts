@@ -1,4 +1,5 @@
 import { eventTypeFromSlug, eventTypeToSlug } from "@/lib/event-types";
+import { parseEventDate, type EventDateIso } from "@/lib/event-dates";
 import { parseDaysOfWeek, type DayOfWeek } from "@/lib/weekdays";
 
 export type BrowseFilters = {
@@ -7,6 +8,7 @@ export type BrowseFilters = {
   featured?: boolean;
   q?: string;
   days?: DayOfWeek[];
+  date?: EventDateIso;
 };
 
 function parseCsvParam(value: string | string[] | undefined): string[] {
@@ -27,6 +29,7 @@ export function buildBrowseUrl(basePath: string, filters: BrowseFilters): string
   }
   if (filters.featured) params.set("featured", "1");
   if (filters.days?.length) params.set("day", filters.days.join(","));
+  if (filters.date) params.set("date", filters.date);
 
   const qs = params.toString();
   return qs ? `${basePath}?${qs}` : basePath;
@@ -38,6 +41,7 @@ export function parseBrowseFilters(searchParams: {
   featured?: string;
   q?: string;
   day?: string | string[];
+  date?: string | string[];
 }): BrowseFilters {
   const typeSlug = searchParams.type?.trim();
   const q = searchParams.q?.trim();
@@ -49,6 +53,7 @@ export function parseBrowseFilters(searchParams: {
     featured: searchParams.featured === "1",
     q: q || undefined,
     days: parseDaysOfWeek(searchParams.day),
+    date: parseEventDate(searchParams.date),
   };
 }
 
@@ -63,6 +68,7 @@ export function toggleNeighborhoodSlug(
   return next.length > 0 ? next : undefined;
 }
 
+/** Modal filters only — date is picked inline next to the Filters button. */
 export function activeFilterCount(filters: BrowseFilters): number {
   return (
     (filters.type ? 1 : 0) +

@@ -51,3 +51,24 @@ export async function recordVipOrder(params: {
     updated_at: new Date().toISOString(),
   });
 }
+
+export async function recordEventRegistration(params: {
+  userId: string;
+  eventId: string;
+  tierId: string;
+  amountCents: number;
+  paymentIntentId: string;
+}) {
+  const admin = createAdminClient();
+  const { error } = await admin.from("event_registrations").insert({
+    event_id: params.eventId,
+    tier_id: params.tierId,
+    user_id: params.userId,
+    status: "confirmed",
+    quantity: 1,
+    amount_cents: params.amountCents,
+    stripe_payment_intent_id: params.paymentIntentId,
+    updated_at: new Date().toISOString(),
+  });
+  if (error && error.code !== "23505") throw error;
+}

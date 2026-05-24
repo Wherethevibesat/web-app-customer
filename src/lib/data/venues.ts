@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import type { VenueOpeningHours } from "@/lib/types/opening-hours";
 
 export interface Venue {
   id: string;
@@ -12,13 +13,19 @@ export interface Venue {
   check_in_count: number | null;
   is_open: boolean | null;
   hours_label: string | null;
+  opening_hours: VenueOpeningHours | null;
+  website_url: string | null;
+  instagram_url: string | null;
+  facebook_url: string | null;
+  tiktok_url: string | null;
+  twitter_url: string | null;
   featured: boolean | null;
   latitude?: number | null;
   longitude?: number | null;
 }
 
 const VENUE_SELECT =
-  "id, name, venue_type, address, image_url, description, rating, neighborhood, check_in_count, is_open, hours_label, featured, latitude, longitude";
+  "id, name, venue_type, address, image_url, description, rating, neighborhood, check_in_count, is_open, hours_label, opening_hours, website_url, instagram_url, facebook_url, tiktok_url, twitter_url, featured, latitude, longitude";
 
 export async function listVenues(options?: {
   search?: string;

@@ -1,6 +1,7 @@
 import { mergeEventTypes } from "@/lib/event-types";
 import { createClient } from "@/lib/supabase/server";
 import { isoWeekday } from "@/lib/weekdays";
+import { eventStartsOnLocalDate, type EventDateIso } from "@/lib/event-dates";
 
 export interface EventVenue {
   id: string;
@@ -133,6 +134,7 @@ export function filterEventsClient(
     neighborhood?: string;
     neighborhoods?: string[];
     days?: number[];
+    date?: EventDateIso;
   },
 ): Event[] {
   let rows = events;
@@ -150,6 +152,9 @@ export function filterEventsClient(
   if (options?.days?.length) {
     const selected = new Set(options.days);
     rows = rows.filter((e) => selected.has(isoWeekday(new Date(e.starts_at))));
+  }
+  if (options?.date) {
+    rows = rows.filter((e) => eventStartsOnLocalDate(e.starts_at, options.date!));
   }
   if (options?.q?.trim()) {
     const q = options.q.trim().toLowerCase();
@@ -172,6 +177,7 @@ export async function searchEvents(
     neighborhood?: string;
     neighborhoods?: string[];
     days?: number[];
+    date?: EventDateIso;
     limit?: number;
   },
 ): Promise<Event[]> {
@@ -189,6 +195,7 @@ export async function searchEvents(
     eventType: options?.eventType,
     neighborhoods: neighborhoodFilters,
     days: options?.days,
+    date: options?.date,
   }).slice(0, options?.limit ?? 40);
 }
 
