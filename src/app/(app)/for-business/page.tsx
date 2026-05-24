@@ -9,7 +9,7 @@ const BUSINESS_TYPES = [
     id: "venues",
     title: "Venues",
     description:
-      "Bars, clubs, and lounges — list your venue, publish events, sell tickets, and reach customers on WTVA.",
+      "Bars, clubs, and lounges - list your venue, publish events, sell tickets, and reach customers on WTVA.",
     icon: Building2,
     available: true,
   },
@@ -25,9 +25,9 @@ const BUSINESS_TYPES = [
     id: "drivers",
     title: "Drivers",
     description:
-      "Partner as a driver for event nights and VIP runs. Driver onboarding opens soon.",
+      "Partner as a driver for event nights and VIP runs. Driver onboarding is now open.",
     icon: Car,
-    available: false,
+    available: true,
   },
 ] as const;
 
@@ -35,6 +35,7 @@ export default async function ForBusinessPage() {
   const host = (await headers()).get("host");
   const loginUrl = getBusinessPortalUrl("/auth/login", host);
   const registerUrl = getBusinessPortalUrl("/auth/register", host);
+  const driverRegisterUrl = getBusinessPortalUrl("/auth/register?role=driver", host);
 
   return (
     <PageShell
@@ -69,7 +70,7 @@ export default async function ForBusinessPage() {
                   Sign in
                 </a>
                 <a
-                  href={registerUrl}
+                  href={id === "drivers" ? driverRegisterUrl : registerUrl}
                   className="inline-flex justify-center rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background"
                 >
                   Create account

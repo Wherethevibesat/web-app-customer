@@ -72,3 +72,52 @@ export async function recordEventRegistration(params: {
   });
   if (error && error.code !== "23505") throw error;
 }
+
+export async function getDriverBookingCommissionPct(): Promise<number> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("platform_settings")
+    .select("driver_booking_commission_pct")
+    .eq("id", 1)
+    .maybeSingle();
+  return Number(data?.driver_booking_commission_pct ?? 10);
+}
+
+export async function confirmDriverBookingPayment(params: {
+  bookingId: string;
+  userId: string;
+  paymentIntentId: string;
+}) {
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+
+  const { data: existing } = await admin
+    .from("driver_bookings")
+    .select("id, status, stripe_payment_intent_id")
+    .eq("id", params.bookingId)
+    .eq("customer_id", params.userId)
+    .maybeSingle();
+
+  if (!existing) throw new Error("Booking not found");
+  if (
+    existing.stripe_payment_intent_id === params.paymentIntentId &&
+    existing.status === "pending_driver"
+  ) {
+    return;
+  }
+  if (existing.status !== "pending_payment") {
+    throw new Error("Booking cannot be confirmed");
+  }
+
+  const { error } = await admin
+    .from("driver_bookings")
+    .update({
+      stripe_payment_intent_id: params.paymentIntentId,
+      status: "pending_driver",
+      updated_at: now,
+    })
+    .eq("id", params.bookingId)
+    .eq("customer_id", params.userId);
+
+  if (error) throw error;
+}

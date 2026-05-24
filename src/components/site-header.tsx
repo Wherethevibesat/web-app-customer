@@ -10,14 +10,17 @@ const NAV = [
   { href: "/discover", label: "Discover" },
   { href: "/discover/events", label: "Events" },
   { href: "/venues", label: "Venues" },
+  { href: "/drivers", label: "Find Driver" },
   { href: "/discover/map", label: "Map" },
-  { href: "/ranking", label: "Rankings" },
   { href: "/for-business", label: "For Business" },
 ];
 
 function isActive(pathname: string, href: string) {
   if (href === "/for-business") {
     return pathname === "/for-business" || pathname.startsWith("/for-business/");
+  }
+  if (href === "/drivers") {
+    return pathname === "/drivers" || pathname.startsWith("/drivers/");
   }
   if (href === "/discover") {
     return pathname === "/" || pathname === "/discover" || pathname.startsWith("/discover/");

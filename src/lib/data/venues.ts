@@ -36,15 +36,19 @@ export async function listVenues(options?: {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("venues")
-    .select(VENUE_SELECT)
+    .select(`${VENUE_SELECT}, listing_expires_at`)
     .eq("published", true)
     .order("featured", { ascending: false })
     .order("name");
 
   if (error) {
-    const fallback = await supabase.from("venues").select("*").order("name");
+    const fallback = await supabase.from("venues").select("*").eq("published", true).order("name");
     if (fallback.error) throw fallback.error;
-    let rows = (fallback.data ?? []) as Venue[];
+    let rows = (fallback.data ?? []) as (Venue & { listing_expires_at?: string | null })[];
+    const now = Date.now();
+    rows = rows.filter(
+      (v) => !v.listing_expires_at || new Date(v.listing_expires_at).getTime() > now,
+    );
     if (neighborhood?.trim()) {
       const target = neighborhood.trim().toLowerCase();
       rows = rows.filter((v) => (v.neighborhood ?? "").toLowerCase() === target);
@@ -60,7 +64,12 @@ export async function listVenues(options?: {
     return rows;
   }
 
-  let rows = (data ?? []) as Venue[];
+  let rows = (data ?? []) as (Venue & { listing_expires_at?: string | null })[];
+  const now = Date.now();
+  rows = rows.filter(
+    (v) => !v.listing_expires_at || new Date(v.listing_expires_at).getTime() > now,
+  );
+
   if (neighborhood?.trim()) {
     const target = neighborhood.trim().toLowerCase();
     rows = rows.filter((v) => (v.neighborhood ?? "").toLowerCase() === target);
@@ -82,7 +91,17 @@ export async function getVenue(id: string): Promise<Venue | null> {
     .from("venues")
     .select("*")
     .eq("id", id)
+    .eq("published", true)
     .maybeSingle();
   if (error) throw error;
-  return data as Venue | null;
+  if (!data) return null;
+
+  const row = data as Venue & { listing_expires_at?: string | null };
+  if (
+    row.listing_expires_at &&
+    new Date(row.listing_expires_at).getTime() <= Date.now()
+  ) {
+    return null;
+  }
+  return row;
 }
