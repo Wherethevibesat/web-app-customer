@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { Building2, Car, Megaphone } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { getBusinessPortalUrl } from "@/lib/business-portal-url";
@@ -30,9 +31,10 @@ const BUSINESS_TYPES = [
   },
 ] as const;
 
-export default function ForBusinessPage() {
-  const loginUrl = getBusinessPortalUrl("/auth/login");
-  const registerUrl = getBusinessPortalUrl("/auth/register");
+export default async function ForBusinessPage() {
+  const host = (await headers()).get("host");
+  const loginUrl = getBusinessPortalUrl("/auth/login", host);
+  const registerUrl = getBusinessPortalUrl("/auth/register", host);
 
   return (
     <PageShell

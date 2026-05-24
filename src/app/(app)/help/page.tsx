@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import { PageShell } from "@/components/page-shell";
+import { getBusinessPortalBaseUrl } from "@/lib/business-portal-url";
 
 const FAQ = [
   {
@@ -20,9 +22,9 @@ const FAQ = [
   },
 ];
 
-export default function HelpPage() {
-  const businessUrl =
-    process.env.NEXT_PUBLIC_BUSINESS_APP_URL ?? "http://localhost:3002";
+export default async function HelpPage() {
+  const host = (await headers()).get("host");
+  const businessUrl = getBusinessPortalBaseUrl(host);
 
   return (
     <PageShell
