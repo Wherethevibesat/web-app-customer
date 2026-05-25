@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/require-user";
-import { getStripe, recordEventRegistration } from "@/lib/stripe/server";
+import { fulfillStripePaymentIntent, getStripe } from "@/lib/stripe/server";
 
 export async function POST(request: Request) {
   const { user } = await requireUser(request);
@@ -24,13 +24,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: "pending", paymentStatus: intent.status });
     }
 
-    await recordEventRegistration({
-      userId: user.id,
-      eventId: intent.metadata.event_id,
-      tierId: intent.metadata.tier_id,
-      amountCents: intent.amount,
-      paymentIntentId,
-    });
+    await fulfillStripePaymentIntent(intent);
 
     return NextResponse.json({ status: "confirmed", paymentStatus: intent.status });
   } catch (e) {

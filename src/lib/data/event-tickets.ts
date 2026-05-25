@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export type EventTicketTier = {
   id: string;
   event_id: string;
+  owner_id: string | null;
   name: string;
   description: string | null;
   price_cents: number;
@@ -15,24 +16,51 @@ export async function listEventTicketTiers(eventId: string): Promise<EventTicket
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("event_ticket_tiers")
-    .select("id, event_id, name, description, price_cents, capacity, sort_order")
+    .select(
+      "id, event_id, name, description, price_cents, capacity, sort_order, event:events(venue:venues(owner_id))",
+    )
     .eq("event_id", eventId)
     .eq("is_active", true)
     .order("sort_order", { ascending: true });
   if (error) return [];
-  return (data ?? []) as EventTicketTier[];
+  return (data ?? []).map((row) => {
+    const event = row.event as { venue?: { owner_id?: string | null } | null } | null;
+    return {
+      id: row.id as string,
+      event_id: row.event_id as string,
+      owner_id: event?.venue?.owner_id ?? null,
+      name: row.name as string,
+      description: (row.description as string | null) ?? null,
+      price_cents: Number(row.price_cents),
+      capacity: row.capacity as number | null,
+      sort_order: Number(row.sort_order ?? 0),
+    };
+  });
 }
 
 export async function getTicketTier(tierId: string): Promise<EventTicketTier | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("event_ticket_tiers")
-    .select("id, event_id, name, description, price_cents, capacity, sort_order")
+    .select(
+      "id, event_id, name, description, price_cents, capacity, sort_order, event:events(venue:venues(owner_id))",
+    )
     .eq("id", tierId)
     .eq("is_active", true)
     .maybeSingle();
   if (error) return null;
-  return data as EventTicketTier | null;
+  if (!data) return null;
+  const event = data.event as { venue?: { owner_id?: string | null } | null } | null;
+  return {
+    id: data.id as string,
+    event_id: data.event_id as string,
+    owner_id: event?.venue?.owner_id ?? null,
+    name: data.name as string,
+    description: (data.description as string | null) ?? null,
+    price_cents: Number(data.price_cents),
+    capacity: data.capacity as number | null,
+    sort_order: Number(data.sort_order ?? 0),
+  };
 }
 
 export async function tierSoldCount(tierId: string): Promise<number> {

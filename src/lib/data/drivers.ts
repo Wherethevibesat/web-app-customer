@@ -149,7 +149,7 @@ export async function getDriverPackageForBooking(packageId: string) {
 
   const { data: company } = await supabase
     .from("driver_companies")
-    .select("id, company_name, published, status, listing_expires_at")
+    .select("id, owner_id, company_name, published, status, listing_expires_at")
     .eq("id", vehicle.company_id)
     .maybeSingle();
 
@@ -165,6 +165,7 @@ export async function getDriverPackageForBooking(packageId: string) {
     id: pkg.id as string,
     vehicle_id: vehicle.id as string,
     company_id: vehicle.company_id as string,
+    owner_id: company.owner_id as string,
     label: pkg.label as string,
     duration_hours: Number(pkg.duration_hours),
     price_cents: pkg.price_cents as number,

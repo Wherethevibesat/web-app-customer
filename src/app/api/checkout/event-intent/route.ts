@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { getTicketTier, tierSoldCount } from "@/lib/data/event-tickets";
 import { requireUser } from "@/lib/auth/require-user";
-import { getStripe } from "@/lib/stripe/server";
+import {
+  getActiveConnectedStripeAccount,
+  getEventTicketCommissionPct,
+  getStripe,
+} from "@/lib/stripe/server";
 
 export async function POST(request: Request) {
   const { user } = await requireUser(request);
@@ -26,14 +30,40 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "This tier is sold out" }, { status: 409 });
     }
 
+    if (!tier.owner_id) {
+      return NextResponse.json(
+        { error: "This event does not have a payout owner configured." },
+        { status: 409 },
+      );
+    }
+
+    const destinationAccountId = await getActiveConnectedStripeAccount(tier.owner_id);
+    if (!destinationAccountId) {
+      return NextResponse.json(
+        {
+          error:
+            "This venue is not ready to accept ticket payments yet. Ask the venue owner to finish Stripe onboarding in the business portal.",
+        },
+        { status: 409 },
+      );
+    }
+
+    const commissionPct = await getEventTicketCommissionPct();
+    const platformFee = Math.round((tier.price_cents * commissionPct) / 100);
+
     const stripe = getStripe();
     const intent = await stripe.paymentIntents.create({
       amount: tier.price_cents,
       currency: "usd",
+      ...(platformFee > 0 ? { application_fee_amount: platformFee } : {}),
+      transfer_data: {
+        destination: destinationAccountId,
+      },
       metadata: {
         type: "event_registration",
         tier_id: tierId,
         event_id: eventId,
+        destination_account_id: destinationAccountId,
         user_id: user.id,
       },
       automatic_payment_methods: { enabled: true },

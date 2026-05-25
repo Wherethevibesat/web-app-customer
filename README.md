@@ -17,7 +17,7 @@ Run Supabase migration `../wtva-web-admin/supabase/migrations/006_v2_messaging_a
 |---------|-------------|
 | **Mapbox map** (`/map`) | `NEXT_PUBLIC_MAPBOX_TOKEN` |
 | **Messaging** (`/messages`) | `SUPABASE_SERVICE_ROLE_KEY` (server APIs) |
-| **VIP checkout** (`/checkout/[id]`) | `STRIPE_SECRET_KEY` + publishable key in `stripe_settings` or `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` |
+| **VIP checkout** (`/checkout/[id]`) | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` + publishable key in `stripe_settings` or `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` |
 
 ## Environment variables
 
@@ -29,6 +29,7 @@ Run Supabase migration `../wtva-web-admin/supabase/migrations/006_v2_messaging_a
 | `SUPABASE_SERVICE_ROLE_KEY` | v2 messaging |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | v2 map |
 | `STRIPE_SECRET_KEY` | v2 VIP checkout |
+| `STRIPE_WEBHOOK_SECRET` | Stripe payment webhooks |
 
 ## Site map
 

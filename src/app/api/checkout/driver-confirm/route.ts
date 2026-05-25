@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/require-user";
-import { confirmDriverBookingPayment, getStripe } from "@/lib/stripe/server";
+import { fulfillStripePaymentIntent, getStripe } from "@/lib/stripe/server";
 
 export async function POST(request: Request) {
   const { user } = await requireUser(request);
@@ -30,20 +30,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing booking" }, { status: 400 });
     }
 
-    const { updated } = await confirmDriverBookingPayment({
-      bookingId,
-      userId: user.id,
-      paymentIntentId,
-    });
-
-    if (updated) {
-      const { sendDriverBookingPaidNotifications } = await import(
-        "@/lib/data/driver-notifications"
-      );
-      void sendDriverBookingPaidNotifications(bookingId).catch((err) =>
-        console.error("[email] driver booking paid notifications failed:", err),
-      );
-    }
+    await fulfillStripePaymentIntent(intent);
 
     return NextResponse.json({ status: "confirmed", paymentStatus: intent.status, bookingId });
   } catch (e) {

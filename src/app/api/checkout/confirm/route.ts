@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { getStripe, recordVipOrder } from "@/lib/stripe/server";
+import { fulfillStripePaymentIntent, getStripe, recordVipOrder } from "@/lib/stripe/server";
 
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -23,13 +23,15 @@ export async function POST(request: Request) {
 
     const status = intent.status === "succeeded" ? "paid" : "failed";
     if (status === "paid") {
+      await fulfillStripePaymentIntent(intent);
+    } else if (intent.metadata.vip_package_id) {
       await recordVipOrder({
         userId: user.id,
         vipPackageId: intent.metadata.vip_package_id,
         eventId: intent.metadata.event_id || null,
         amount: intent.amount / 100,
         paymentIntentId,
-        status: "paid",
+        status: "failed",
       });
     }
 

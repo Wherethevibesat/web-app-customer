@@ -10,6 +10,14 @@ export function getStripe() {
   return new Stripe(key);
 }
 
+export function getStripeWebhookSecret() {
+  const secret = process.env.STRIPE_WEBHOOK_SECRET;
+  if (!secret) {
+    throw new Error("STRIPE_WEBHOOK_SECRET is not configured");
+  }
+  return secret;
+}
+
 export async function getPublishableKey(): Promise<string | null> {
   const supabase = await createClient();
   const { data } = await supabase
@@ -24,7 +32,7 @@ export async function getVipPackage(packageId: string) {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("vip_packages")
-    .select("*, event:events(id, title), venue:venues(id, name)")
+    .select("*, event:events(id, title), venue:venues(id, name, owner_id)")
     .eq("id", packageId)
     .eq("is_active", true)
     .maybeSingle();
@@ -41,15 +49,47 @@ export async function recordVipOrder(params: {
   status: "paid" | "failed";
 }) {
   const admin = createAdminClient();
-  await admin.from("vip_orders").insert({
+  const now = new Date().toISOString();
+  const { data: existing } = await admin
+    .from("vip_orders")
+    .select("id, status")
+    .eq("stripe_payment_intent_id", params.paymentIntentId)
+    .maybeSingle();
+
+  if (existing?.id) {
+    if (existing.status === params.status) return;
+    const { error: updateError } = await admin
+      .from("vip_orders")
+      .update({
+        status: params.status,
+        updated_at: now,
+      })
+      .eq("id", existing.id);
+    if (updateError) throw updateError;
+    return;
+  }
+
+  const { error } = await admin.from("vip_orders").insert({
     user_id: params.userId,
     vip_package_id: params.vipPackageId,
     event_id: params.eventId,
     amount: params.amount,
     stripe_payment_intent_id: params.paymentIntentId,
     status: params.status,
-    updated_at: new Date().toISOString(),
+    updated_at: now,
   });
+  if (error && error.code !== "23505") throw error;
+
+  if (error?.code === "23505") {
+    const { error: updateError } = await admin
+      .from("vip_orders")
+      .update({
+        status: params.status,
+        updated_at: now,
+      })
+      .eq("stripe_payment_intent_id", params.paymentIntentId);
+    if (updateError) throw updateError;
+  }
 }
 
 export async function recordEventRegistration(params: {
@@ -81,6 +121,55 @@ export async function getDriverBookingCommissionPct(): Promise<number> {
     .eq("id", 1)
     .maybeSingle();
   return Number(data?.driver_booking_commission_pct ?? 10);
+}
+
+export async function getEventTicketCommissionPct(): Promise<number> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("platform_settings")
+    .select("event_ticket_commission_pct")
+    .eq("id", 1)
+    .maybeSingle();
+  return Number(data?.event_ticket_commission_pct ?? 10);
+}
+
+export async function getVipCommissionPct(): Promise<number> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("platform_settings")
+    .select("vip_commission_pct")
+    .eq("id", 1)
+    .maybeSingle();
+  return Number(data?.vip_commission_pct ?? 10);
+}
+
+type StripeAccountRow = {
+  stripe_account_id: string;
+};
+
+export async function getActiveConnectedStripeAccount(
+  userId: string,
+): Promise<string | null> {
+  const admin = createAdminClient();
+  const { data } = await admin
+    .from("stripe_accounts")
+    .select("stripe_account_id")
+    .eq("user_id", userId)
+    .order("is_default", { ascending: false })
+    .order("connected_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const row = data as StripeAccountRow | null;
+  if (!row?.stripe_account_id) return null;
+
+  const stripe = getStripe();
+  const account = await stripe.accounts.retrieve(row.stripe_account_id);
+  if (("deleted" in account && account.deleted) || !account.charges_enabled || !account.payouts_enabled) {
+    return null;
+  }
+
+  return account.id;
 }
 
 export async function confirmDriverBookingPayment(params: {
@@ -121,4 +210,69 @@ export async function confirmDriverBookingPayment(params: {
 
   if (error) throw error;
   return { updated: true };
+}
+
+export async function fulfillStripePaymentIntent(
+  intent: Stripe.PaymentIntent,
+): Promise<{ kind: "driver_booking" | "event_registration" | "vip_order" | "ignored"; updated: boolean }> {
+  const type = intent.metadata.type;
+
+  if (type === "driver_booking") {
+    const bookingId = intent.metadata.booking_id;
+    const userId = intent.metadata.user_id;
+    if (!bookingId || !userId) throw new Error("Driver booking metadata is incomplete.");
+
+    const result = await confirmDriverBookingPayment({
+      bookingId,
+      userId,
+      paymentIntentId: intent.id,
+    });
+
+    if (result.updated) {
+      const { sendDriverBookingPaidNotifications } = await import(
+        "@/lib/data/driver-notifications"
+      );
+      void sendDriverBookingPaidNotifications(bookingId).catch((err) =>
+        console.error("[email] driver booking paid notifications failed:", err),
+      );
+    }
+
+    return { kind: "driver_booking", updated: result.updated };
+  }
+
+  if (type === "event_registration") {
+    const eventId = intent.metadata.event_id;
+    const tierId = intent.metadata.tier_id;
+    const userId = intent.metadata.user_id;
+    if (!eventId || !tierId || !userId) {
+      throw new Error("Event registration metadata is incomplete.");
+    }
+
+    await recordEventRegistration({
+      userId,
+      eventId,
+      tierId,
+      amountCents: intent.amount_received ?? intent.amount,
+      paymentIntentId: intent.id,
+    });
+    return { kind: "event_registration", updated: true };
+  }
+
+  if (type === "vip_order" || intent.metadata.vip_package_id) {
+    const vipPackageId = intent.metadata.vip_package_id;
+    const userId = intent.metadata.user_id;
+    if (!vipPackageId || !userId) throw new Error("VIP order metadata is incomplete.");
+
+    await recordVipOrder({
+      userId,
+      vipPackageId,
+      eventId: intent.metadata.event_id || null,
+      amount: (intent.amount_received ?? intent.amount) / 100,
+      paymentIntentId: intent.id,
+      status: intent.status === "succeeded" ? "paid" : "failed",
+    });
+    return { kind: "vip_order", updated: true };
+  }
+
+  return { kind: "ignored", updated: false };
 }
