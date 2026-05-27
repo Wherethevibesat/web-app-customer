@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { MapPin, Calendar } from "lucide-react";
+import { MapPin, Calendar, Repeat } from "lucide-react";
 import { getEvent, listEventVipPackages } from "@/lib/data/events";
+import { formatRecurringSchedule, getEventSeries } from "@/lib/data/event-series";
 import { listOffersForEvent } from "@/lib/data/promoters";
 import { PromoterOffersSection } from "@/components/promoter-offers-section";
 import {
@@ -38,9 +39,10 @@ export default async function EventDetailPage({
   const event = await getEvent(id);
   if (!event) notFound();
 
-  const [vipPackages, promoterOffers] = await Promise.all([
+  const [vipPackages, promoterOffers, seriesData] = await Promise.all([
     listEventVipPackages(id),
     listOffersForEvent(id),
+    event.series_id ? getEventSeries(event.series_id) : Promise.resolve(null),
   ]);
   const ticketTiers = await listEventTicketTiers(id);
   const publishableKey = await getPublishableKey();
@@ -84,6 +86,19 @@ export default async function EventDetailPage({
         <p className="mt-3 text-lg text-wtva-muted">
           {formatEventDateTime(event.starts_at, event.ends_at)}
         </p>
+
+        {seriesData && (
+          <Link
+            href={`/events/series/${seriesData.series.id}`}
+            className="mt-4 inline-flex items-center gap-2 rounded-lg border border-wtva-dark-300 bg-wtva-card px-4 py-2.5 text-sm hover:border-wtva-muted"
+          >
+            <Repeat className="h-4 w-4 shrink-0" />
+            <span>
+              Repeats {formatRecurringSchedule(seriesData.series.recurrence).toLowerCase()}
+              <span className="text-wtva-muted"> · View all dates</span>
+            </span>
+          </Link>
+        )}
 
         {(event.neighborhood || event.venue) && (
           <div className="mt-4 flex flex-wrap items-center gap-4 text-sm">

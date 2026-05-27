@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { FavoriteButton } from "@/components/favorite-button";
 import { VenueDetailsExtra } from "@/components/venue-details-extra";
 import { MessageVenueButton } from "@/components/message-venue-button";
-import { EventCard } from "@/components/event-card";
+import { BrowseEventCard } from "@/components/browse-event-card";
 import { VenueCard } from "@/components/venue-card";
 import { DriverCompanyCard } from "@/components/driver-company-card";
 import { VenueQuickInfo } from "@/components/venue-quick-info";
@@ -14,8 +14,8 @@ import { VenueShareButton } from "@/components/venue-share-button";
 import { VenueTablesSection } from "@/components/venue-tables-section";
 import { VenueVipPackagesSection } from "@/components/venue-vip-packages-section";
 import { getVenue, listRelatedVenues } from "@/lib/data/venues";
+import { browseItemKey, listBrowseFeed } from "@/lib/browse-events";
 import {
-  listEventsByVenue,
   listPastEventsByVenue,
   listVenueVipPackages,
 } from "@/lib/data/events";
@@ -58,7 +58,7 @@ export default async function VenueDetailPage({
   if (!venue) notFound();
 
   const [
-    venueEvents,
+    venueEventItems,
     pastEvents,
     promoters,
     promoterOffers,
@@ -67,7 +67,7 @@ export default async function VenueDetailPage({
     drivers,
     supabase,
   ] = await Promise.all([
-    listEventsByVenue(id),
+    listBrowseFeed({ venueId: id, limit: 12 }).catch(() => []),
     listPastEventsByVenue(id),
     listPromotersForVenue(id),
     listOffersForVenue(id),
@@ -164,12 +164,12 @@ export default async function VenueDetailPage({
           </section>
         )}
 
-        {venueEvents.length > 0 && (
+        {venueEventItems.length > 0 && (
           <section className="mt-12">
             <h2 className="text-xl font-bold">Upcoming events</h2>
             <div className="mt-6 grid gap-6 sm:grid-cols-2">
-              {venueEvents.map((event) => (
-                <EventCard key={event.id} event={event} />
+              {venueEventItems.map((item) => (
+                <BrowseEventCard key={browseItemKey(item)} item={item} />
               ))}
             </div>
           </section>

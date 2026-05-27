@@ -1,14 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BrowseFiltersBar } from "@/components/browse-filters";
-import { EventCard } from "@/components/event-card";
+import { BrowseEventCard } from "@/components/browse-event-card";
 import { PageShell } from "@/components/page-shell";
 import { VenueCard } from "@/components/venue-card";
-import {
-  filterEventsClient,
-  getEventTypes,
-  listPublishedEvents,
-} from "@/lib/data/events";
+import { browseItemKey, filterBrowseFeed, listBrowseFeed } from "@/lib/browse-events";
+import { getEventTypes } from "@/lib/data/events";
 import {
   getNeighborhoodBySlug,
   listNeighborhoodOptions,
@@ -30,9 +27,9 @@ export default async function DiscoverNeighborhoodPage({
 
   const basePath = `/discover/neighborhoods/${slug}`;
 
-  const [events, types, neighborhoods] = await Promise.all([
-    listPublishedEvents({
-      neighborhood: group.name,
+  const [items, types, neighborhoods] = await Promise.all([
+    listBrowseFeed({
+      neighborhoods: [group.name],
       eventType: filters.type,
       limit: 24,
     }).catch(() => []),
@@ -41,8 +38,8 @@ export default async function DiscoverNeighborhoodPage({
   ]);
 
   const filtered = filters.q
-    ? filterEventsClient(events, { q: filters.q })
-    : events;
+    ? filterBrowseFeed(items, { q: filters.q })
+    : items;
 
   return (
     <PageShell
@@ -64,8 +61,8 @@ export default async function DiscoverNeighborhoodPage({
         <section className="mt-10">
           <h2 className="text-lg font-semibold">Upcoming events</h2>
           <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((e) => (
-              <EventCard key={e.id} event={e} />
+            {filtered.map((item) => (
+              <BrowseEventCard key={browseItemKey(item)} item={item} />
             ))}
           </div>
           <p className="mt-4 text-sm text-wtva-muted">

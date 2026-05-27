@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { EventCard } from "@/components/event-card";
+import { BrowseEventCard } from "@/components/browse-event-card";
 import { HeroVideoBackground } from "@/components/hero-video-background";
 import { HomeHeroSearch } from "@/components/home-hero-search";
 import { SectionHeading } from "@/components/section-heading";
 import { VenueCard } from "@/components/venue-card";
-import { getEventTypes, listPublishedEvents } from "@/lib/data/events";
+import { browseItemKey, listBrowseFeed } from "@/lib/browse-events";
+import { getEventTypes } from "@/lib/data/events";
 import { listNeighborhoodOptions } from "@/lib/data/neighborhoods";
 import { listVenues } from "@/lib/data/venues";
 
@@ -14,9 +15,9 @@ const HERO_VIDEO_POSTER =
   process.env.NEXT_PUBLIC_HERO_VIDEO_POSTER ?? "/videos/hero-poster.jpg";
 
 export default async function HomePage() {
-  const [featuredEvents, upcomingEvents, venues, neighborhoods, eventTypes] = await Promise.all([
-    listPublishedEvents({ featuredOnly: true, limit: 3 }).catch(() => []),
-    listPublishedEvents({ limit: 8 }).catch(() => []),
+  const [featuredItems, upcomingItems, venues, neighborhoods, eventTypes] = await Promise.all([
+    listBrowseFeed({ featuredOnly: true, limit: 3 }).catch(() => []),
+    listBrowseFeed({ limit: 8 }).catch(() => []),
     listVenues().catch(() => []),
     listNeighborhoodOptions().catch(() => []),
     getEventTypes().catch(() => []),
@@ -60,7 +61,7 @@ export default async function HomePage() {
       </section>
 
       <div className="mx-auto max-w-7xl px-4 py-12 lg:px-8 lg:py-16 space-y-16">
-        {featuredEvents.length > 0 && (
+        {featuredItems.length > 0 && (
           <section>
             <SectionHeading
               title="Featured events"
@@ -68,8 +69,8 @@ export default async function HomePage() {
               href="/discover/events?featured=1"
             />
             <div className="grid gap-6 lg:grid-cols-1">
-              {featuredEvents.map((e) => (
-                <EventCard key={e.id} event={e} large />
+              {featuredItems.map((item) => (
+                <BrowseEventCard key={browseItemKey(item)} item={item} large />
               ))}
             </div>
           </section>
@@ -81,10 +82,10 @@ export default async function HomePage() {
             subtitle="What's on the calendar"
             href="/discover/events"
           />
-          {upcomingEvents.length > 0 ? (
+          {upcomingItems.length > 0 ? (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {upcomingEvents.map((e) => (
-                <EventCard key={e.id} event={e} />
+              {upcomingItems.map((item) => (
+                <BrowseEventCard key={browseItemKey(item)} item={item} />
               ))}
             </div>
           ) : (

@@ -1,11 +1,8 @@
 import Link from "next/link";
 import { BrowseFiltersBar } from "@/components/browse-filters";
-import { EventCard } from "@/components/event-card";
-import {
-  filterEventsClient,
-  getEventTypes,
-  listPublishedEvents,
-} from "@/lib/data/events";
+import { BrowseEventCard } from "@/components/browse-event-card";
+import { browseItemKey, filterBrowseFeed, listBrowseFeed } from "@/lib/browse-events";
+import { getEventTypes } from "@/lib/data/events";
 import {
   listNeighborhoodOptions,
   resolveNeighborhoodNames,
@@ -34,8 +31,8 @@ export async function EventsBrowseView({
   const filters = parseBrowseFilters(raw);
   const neighborhoodNames = await resolveNeighborhoodNames(filters.neighborhoods);
 
-  const [events, types, neighborhoods] = await Promise.all([
-    listPublishedEvents({
+  const [items, types, neighborhoods] = await Promise.all([
+    listBrowseFeed({
       eventType: filters.type,
       neighborhoods: neighborhoodNames.length ? neighborhoodNames : undefined,
       featuredOnly: filters.featured,
@@ -46,7 +43,7 @@ export async function EventsBrowseView({
     listNeighborhoodOptions().catch(() => []),
   ]);
 
-  const filtered = filterEventsClient(events, {
+  const filtered = filterBrowseFeed(items, {
     q: filters.q,
     days: filters.days,
     date: filters.date,
@@ -96,8 +93,8 @@ export async function EventsBrowseView({
 
       {filtered.length > 0 ? (
         <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((e) => (
-            <EventCard key={e.id} event={e} />
+          {filtered.map((item) => (
+            <BrowseEventCard key={browseItemKey(item)} item={item} />
           ))}
         </div>
       ) : (

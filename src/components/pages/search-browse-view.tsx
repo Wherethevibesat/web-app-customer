@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { BrowseFiltersBar } from "@/components/browse-filters";
-import { EventCard } from "@/components/event-card";
+import { BrowseEventCard } from "@/components/browse-event-card";
 import { VenueCard } from "@/components/venue-card";
-import { getEventTypes, searchEvents } from "@/lib/data/events";
+import { browseItemKey, searchBrowseFeed } from "@/lib/browse-events";
+import { getEventTypes } from "@/lib/data/events";
 import {
   listNeighborhoodOptions,
   resolveNeighborhoodName,
@@ -37,9 +38,9 @@ export async function SearchBrowseView({
       filters.days?.length,
   );
 
-  const [events, allVenues, types, neighborhoods] = await Promise.all([
+  const [eventItems, allVenues, types, neighborhoods] = await Promise.all([
     hasFilters
-      ? searchEvents(query, {
+      ? searchBrowseFeed(query, {
           eventType: filters.type,
           neighborhood: neighborhoodName,
           days: filters.days,
@@ -87,12 +88,12 @@ export async function SearchBrowseView({
         <div className="mt-12 space-y-14">
           <section>
             <h2 className="text-lg font-semibold">
-              Events <span className="text-wtva-muted">({events.length})</span>
+              Events <span className="text-wtva-muted">({eventItems.length})</span>
             </h2>
-            {events.length > 0 ? (
+            {eventItems.length > 0 ? (
               <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {events.map((e) => (
-                  <EventCard key={e.id} event={e} />
+                {eventItems.map((item) => (
+                  <BrowseEventCard key={browseItemKey(item)} item={item} />
                 ))}
               </div>
             ) : (
@@ -115,7 +116,7 @@ export async function SearchBrowseView({
             )}
           </section>
 
-          {events.length === 0 && allVenues.length === 0 && (
+          {eventItems.length === 0 && allVenues.length === 0 && (
             <p className="py-8 text-center text-wtva-muted">
               Nothing found.{" "}
               <Link href="/discover/events" className="underline">

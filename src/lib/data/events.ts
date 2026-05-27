@@ -1,7 +1,7 @@
 import { mergeEventTypes } from "@/lib/event-types";
 import { activeEventsOrFilter, eventIsActive, pastEventsOrFilter } from "@/lib/event-visibility";
 import { createClient } from "@/lib/supabase/server";
-import { isoWeekday } from "@/lib/weekdays";
+import { isoWeekday, type DayOfWeek } from "@/lib/weekdays";
 import { eventStartsOnLocalDate, type EventDateIso } from "@/lib/event-dates";
 
 export interface EventVenue {
@@ -23,18 +23,19 @@ export interface Event {
   image_url: string | null;
   featured: boolean | null;
   venue_id: string | null;
+  series_id?: string | null;
   venue?: EventVenue | null;
 }
 
-function venueFromJoin(
+export function venueFromJoin(
   venue: EventVenue | EventVenue[] | null,
 ): EventVenue | null {
   if (!venue) return null;
   return Array.isArray(venue) ? venue[0] ?? null : venue;
 }
 
-const EVENT_SELECT =
-  "id, title, description, event_type, neighborhood, starts_at, ends_at, image_url, featured, venue_id, venue:venues(id, name, image_url, neighborhood, venue_type)";
+export const EVENT_SELECT =
+  "id, title, description, event_type, neighborhood, starts_at, ends_at, image_url, featured, venue_id, series_id, venue:venues(id, name, image_url, neighborhood, venue_type)";
 
 export async function listPublishedEvents(options?: {
   upcomingOnly?: boolean;
@@ -43,6 +44,7 @@ export async function listPublishedEvents(options?: {
   neighborhood?: string;
   neighborhoods?: string[];
   limit?: number;
+  excludeSeries?: boolean;
 }): Promise<Event[]> {
   const supabase = await createClient();
   let query = supabase
@@ -51,6 +53,9 @@ export async function listPublishedEvents(options?: {
     .eq("status", "published")
     .order("starts_at", { ascending: true });
 
+  if (options?.excludeSeries) {
+    query = query.is("series_id", null);
+  }
   if (options?.upcomingOnly !== false) {
     query = query.or(activeEventsOrFilter());
   }
@@ -128,8 +133,15 @@ export async function getEvent(id: string): Promise<Event | null> {
 }
 
 export async function getEventTypes(): Promise<string[]> {
-  const events = await listPublishedEvents({ upcomingOnly: false, limit: 200 });
-  const fromDb = [...new Set(events.map((e) => e.event_type))];
+  const { listBrowseFeed } = await import("@/lib/browse-events");
+  const items = await listBrowseFeed({ limit: 200 });
+  const fromDb = [
+    ...new Set(
+      items.map((item) =>
+        item.kind === "event" ? item.event.event_type : item.series.event_type,
+      ),
+    ),
+  ];
   return mergeEventTypes(fromDb);
 }
 
@@ -183,27 +195,16 @@ export async function searchEvents(
     eventType?: string;
     neighborhood?: string;
     neighborhoods?: string[];
-    days?: number[];
+    days?: DayOfWeek[];
     date?: EventDateIso;
     limit?: number;
   },
 ): Promise<Event[]> {
-  const neighborhoodFilters =
-    options?.neighborhoods ??
-    (options?.neighborhood ? [options.neighborhood] : undefined);
-  const all = await listPublishedEvents({
-    upcomingOnly: true,
-    eventType: options?.eventType,
-    neighborhoods: neighborhoodFilters,
-    limit: 200,
-  });
-  return filterEventsClient(all, {
-    q: query,
-    eventType: options?.eventType,
-    neighborhoods: neighborhoodFilters,
-    days: options?.days,
-    date: options?.date,
-  }).slice(0, options?.limit ?? 40);
+  const { searchBrowseFeed } = await import("@/lib/browse-events");
+  const items = await searchBrowseFeed(query, options);
+  return items.map((item) =>
+    item.kind === "event" ? item.event : item.series.nextOccurrence,
+  );
 }
 
 export interface VipPackage {
