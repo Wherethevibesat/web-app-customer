@@ -202,18 +202,20 @@ export function BrowseFiltersBar({
         </div>
       )}
 
-      <BrowseFiltersModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        basePath={basePath}
-        filters={filters}
-        neighborhoods={neighborhoods}
-        eventTypes={eventTypes}
-        showFeatured={showFeatured}
-        showEventTypes={showEventTypes}
-        showNeighborhoods={showNeighborhoods}
-        showDayOfWeek={showDayOfWeek}
-      />
+      {modalOpen && (
+        <BrowseFiltersModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          basePath={basePath}
+          filters={filters}
+          neighborhoods={neighborhoods}
+          eventTypes={eventTypes}
+          showFeatured={showFeatured}
+          showEventTypes={showEventTypes}
+          showNeighborhoods={showNeighborhoods}
+          showDayOfWeek={showDayOfWeek}
+        />
+      )}
     </div>
   );
 }

@@ -2,9 +2,11 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { EventCard } from "@/components/event-card";
 import { HeroVideoBackground } from "@/components/hero-video-background";
+import { HomeHeroSearch } from "@/components/home-hero-search";
 import { SectionHeading } from "@/components/section-heading";
 import { VenueCard } from "@/components/venue-card";
-import { listPublishedEvents } from "@/lib/data/events";
+import { getEventTypes, listPublishedEvents } from "@/lib/data/events";
+import { listNeighborhoodOptions } from "@/lib/data/neighborhoods";
 import { listVenues } from "@/lib/data/venues";
 
 const HERO_VIDEO_SRC = process.env.NEXT_PUBLIC_HERO_VIDEO_URL ?? "/videos/hero.mp4";
@@ -12,10 +14,12 @@ const HERO_VIDEO_POSTER =
   process.env.NEXT_PUBLIC_HERO_VIDEO_POSTER ?? "/videos/hero-poster.jpg";
 
 export default async function HomePage() {
-  const [featuredEvents, upcomingEvents, venues] = await Promise.all([
+  const [featuredEvents, upcomingEvents, venues, neighborhoods, eventTypes] = await Promise.all([
     listPublishedEvents({ featuredOnly: true, limit: 3 }).catch(() => []),
     listPublishedEvents({ limit: 8 }).catch(() => []),
     listVenues().catch(() => []),
+    listNeighborhoodOptions().catch(() => []),
+    getEventTypes().catch(() => []),
   ]);
 
   const featuredVenues = venues.filter((v) => v.featured).slice(0, 4);
@@ -51,22 +55,7 @@ export default async function HomePage() {
               Browse events
             </Link>
           </div>
-          <form action="/discover/search" method="get" className="mt-10 max-w-2xl">
-            <div className="flex gap-2 rounded-xl border border-wtva-dark-300/80 bg-black/40 p-2 shadow-lg backdrop-blur-md">
-              <input
-                name="q"
-                type="search"
-                placeholder="Search events, venues, or neighborhoods…"
-                className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm outline-none placeholder:text-wtva-subtle"
-              />
-              <button
-                type="submit"
-                className="shrink-0 rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background"
-              >
-                Search
-              </button>
-            </div>
-          </form>
+          <HomeHeroSearch neighborhoods={neighborhoods} eventTypes={eventTypes} />
         </div>
       </section>
 

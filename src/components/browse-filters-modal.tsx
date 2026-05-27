@@ -23,6 +23,7 @@ type BrowseFiltersModalProps = {
   showEventTypes?: boolean;
   showNeighborhoods?: boolean;
   showDayOfWeek?: boolean;
+  onApply?: (filters: BrowseFilters) => void;
 };
 
 function FilterChip({
@@ -70,22 +71,18 @@ export function BrowseFiltersModal({
   showEventTypes = true,
   showNeighborhoods = true,
   showDayOfWeek = false,
+  onApply,
 }: BrowseFiltersModalProps) {
   const router = useRouter();
   const types = mergeEventTypes(eventTypes);
-  const [draft, setDraft] = useState<BrowseFilters>(filters);
-
-  useEffect(() => {
-    if (!open) return;
-    setDraft({
-      type: filters.type,
-      neighborhoods: filters.neighborhoods,
-      featured: filters.featured,
-      days: filters.days,
-      date: filters.date,
-      q: filters.q,
-    });
-  }, [open, filters]);
+  const [draft, setDraft] = useState<BrowseFilters>(() => ({
+    type: filters.type,
+    neighborhoods: filters.neighborhoods,
+    featured: filters.featured,
+    days: filters.days,
+    date: filters.date,
+    q: filters.q,
+  }));
 
   useEffect(() => {
     if (!open) return;
@@ -104,6 +101,10 @@ export function BrowseFiltersModal({
 
   function applyDraft() {
     onClose();
+    if (onApply) {
+      onApply(draft);
+      return;
+    }
     router.push(buildBrowseUrl(basePath, draft));
   }
 
