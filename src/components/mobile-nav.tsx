@@ -2,14 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Calendar, Building2, Map, User } from "lucide-react";
+import { Home, Calendar, Building2, Sparkles, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { href: "/discover", label: "Discover", icon: Home },
   { href: "/discover/events", label: "Events", icon: Calendar },
+  { href: "/discover/concierge", label: "Concierge", icon: Sparkles },
   { href: "/venues", label: "Venues", icon: Building2 },
-  { href: "/discover/map", label: "Map", icon: Map },
   { href: "/profile", label: "You", icon: User },
 ];
 
