@@ -16,7 +16,7 @@ const HERO_VIDEO_POSTER =
 
 export default async function HomePage() {
   const [featuredItems, upcomingItems, venues, neighborhoods, eventTypes] = await Promise.all([
-    listBrowseFeed({ featuredOnly: true, limit: 3 }).catch(() => []),
+    listBrowseFeed({ homepageFeaturedOnly: true, limit: 3 }).catch(() => []),
     listBrowseFeed({ limit: 8 }).catch(() => []),
     listVenues().catch(() => []),
     listNeighborhoodOptions().catch(() => []),
@@ -65,7 +65,7 @@ export default async function HomePage() {
           <section>
             <SectionHeading
               title="Featured events"
-              subtitle="Hand-picked nights out"
+              subtitle="Sponsored placements"
               href="/discover/events?featured=1"
             />
             <div className="grid gap-6 lg:grid-cols-1">

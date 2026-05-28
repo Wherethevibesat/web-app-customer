@@ -22,6 +22,9 @@ export interface Event {
   ends_at: string | null;
   image_url: string | null;
   featured: boolean | null;
+  homepage_featured?: boolean;
+  featured_starts_at?: string | null;
+  featured_ends_at?: string | null;
   venue_id: string | null;
   series_id?: string | null;
   venue?: EventVenue | null;
@@ -35,11 +38,12 @@ export function venueFromJoin(
 }
 
 export const EVENT_SELECT =
-  "id, title, description, event_type, neighborhood, starts_at, ends_at, image_url, featured, venue_id, series_id, venue:venues(id, name, image_url, neighborhood, venue_type)";
+  "id, title, description, event_type, neighborhood, starts_at, ends_at, image_url, featured, homepage_featured, featured_starts_at, featured_ends_at, venue_id, series_id, venue:venues(id, name, image_url, neighborhood, venue_type)";
 
 export async function listPublishedEvents(options?: {
   upcomingOnly?: boolean;
   featuredOnly?: boolean;
+  homepageFeaturedOnly?: boolean;
   eventType?: string;
   neighborhood?: string;
   neighborhoods?: string[];
@@ -61,6 +65,9 @@ export async function listPublishedEvents(options?: {
   }
   if (options?.featuredOnly) {
     query = query.eq("featured", true);
+  }
+  if (options?.homepageFeaturedOnly) {
+    query = query.eq("homepage_featured", true);
   }
   if (options?.eventType) {
     query = query.eq("event_type", options.eventType);
@@ -94,7 +101,16 @@ export async function listPublishedEvents(options?: {
     }))
     .filter((row) =>
       options?.upcomingOnly === false ? true : eventIsActive(row as Event),
-    ) as Event[];
+    )
+    .filter((row) => {
+      if (!options?.homepageFeaturedOnly) return true;
+      const startsAt = row.featured_starts_at ? new Date(row.featured_starts_at).getTime() : null;
+      const endsAt = row.featured_ends_at ? new Date(row.featured_ends_at).getTime() : null;
+      const now = Date.now();
+      if (startsAt && startsAt > now) return false;
+      if (endsAt && endsAt < now) return false;
+      return true;
+    }) as Event[];
 }
 
 export async function listEventsByVenue(venueId: string): Promise<Event[]> {

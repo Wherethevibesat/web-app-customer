@@ -4,7 +4,12 @@ export const EVENT_TYPES = [
   "Night Party",
   "After Hours",
   "Brunch / Daytime",
+  "Happy Hours",
   "Live Music / DJ",
+  "Hookah Vibes",
+  "25 and Over",
+  "30 and Over",
+  "Upscale",
   "Private Event",
   "Other",
 ] as const;

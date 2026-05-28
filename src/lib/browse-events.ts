@@ -15,6 +15,7 @@ export type BrowseItem =
 export async function listBrowseFeed(options?: {
   upcomingOnly?: boolean;
   featuredOnly?: boolean;
+  homepageFeaturedOnly?: boolean;
   eventType?: string;
   neighborhoods?: string[];
   venueId?: string;
@@ -24,17 +25,20 @@ export async function listBrowseFeed(options?: {
     listPublishedEvents({
       upcomingOnly: options?.upcomingOnly,
       featuredOnly: options?.featuredOnly,
+      homepageFeaturedOnly: options?.homepageFeaturedOnly,
       eventType: options?.eventType,
       neighborhoods: options?.neighborhoods,
       limit: options?.limit,
       excludeSeries: true,
     }),
-    listPublishedEventSeries({
-      featuredOnly: options?.featuredOnly,
-      eventType: options?.eventType,
-      neighborhoods: options?.neighborhoods,
-      venueId: options?.venueId,
-    }),
+    options?.homepageFeaturedOnly
+      ? Promise.resolve([])
+      : listPublishedEventSeries({
+          featuredOnly: options?.featuredOnly,
+          eventType: options?.eventType,
+          neighborhoods: options?.neighborhoods,
+          venueId: options?.venueId,
+        }),
   ]);
 
   const items: BrowseItem[] = [
