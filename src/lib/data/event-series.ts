@@ -1,5 +1,10 @@
-import type { Event, EventVenue } from "@/lib/data/events";
-import { EVENT_SELECT, venueFromJoin } from "@/lib/data/events";
+import {
+  EVENT_SELECT,
+  EVENT_SELECT_BASE,
+  venueFromJoin,
+  type Event,
+  type EventVenue,
+} from "@/lib/data/events";
 import { activeEventsOrFilter, eventIsActive } from "@/lib/event-visibility";
 import type { DayOfWeek } from "@/lib/weekdays";
 import { weekdayShortLabel } from "@/lib/weekdays";
@@ -123,8 +128,26 @@ export async function listPublishedEventSeries(options?: {
     eventsQuery = eventsQuery.eq("venue_id", options.venueId);
   }
 
-  const { data: eventRows, error: eventsError } = await eventsQuery;
-  if (eventsError) return [];
+  let { data: eventRows, error: eventsError } = await eventsQuery;
+  if (eventsError) {
+    let fallbackQuery = supabase
+      .from("events")
+      .select(`${EVENT_SELECT_BASE}, series_id`)
+      .eq("status", "published")
+      .not("series_id", "is", null)
+      .or(activeEventsOrFilter())
+      .order("starts_at", { ascending: true });
+    if (options?.eventType) fallbackQuery = fallbackQuery.eq("event_type", options.eventType);
+    if (options?.neighborhoods?.length === 1) {
+      fallbackQuery = fallbackQuery.eq("neighborhood", options.neighborhoods[0]);
+    } else if (options?.neighborhoods && options.neighborhoods.length > 1) {
+      fallbackQuery = fallbackQuery.in("neighborhood", options.neighborhoods);
+    }
+    if (options?.venueId) fallbackQuery = fallbackQuery.eq("venue_id", options.venueId);
+    const fallback = await fallbackQuery;
+    if (fallback.error) return [];
+    eventRows = fallback.data as NonNullable<typeof eventRows>;
+  }
 
   const nextBySeries = new Map<string, Event>();
   const featuredBySeries = new Map<string, boolean>();
@@ -216,7 +239,7 @@ export async function getEventSeries(id: string): Promise<{
   };
   if (!seriesIsActive(recurrence)) return null;
 
-  const { data: eventRows } = await supabase
+  let { data: eventRows, error: seriesEventsError } = await supabase
     .from("events")
     .select(EVENT_SELECT)
     .eq("series_id", id)
@@ -224,6 +247,19 @@ export async function getEventSeries(id: string): Promise<{
     .or(activeEventsOrFilter())
     .order("starts_at", { ascending: true })
     .limit(16);
+
+  if (seriesEventsError) {
+    const fallback = await supabase
+      .from("events")
+      .select(EVENT_SELECT_BASE)
+      .eq("series_id", id)
+      .eq("status", "published")
+      .or(activeEventsOrFilter())
+      .order("starts_at", { ascending: true })
+      .limit(16);
+    if (fallback.error) return null;
+    eventRows = fallback.data as NonNullable<typeof eventRows>;
+  }
 
   const upcoming = (eventRows ?? [])
     .map((eventRow) => ({
@@ -258,7 +294,7 @@ export async function listOccurrencesForSeries(
   limit = 16,
 ): Promise<Event[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("events")
     .select(EVENT_SELECT)
     .eq("series_id", seriesId)
@@ -267,7 +303,18 @@ export async function listOccurrencesForSeries(
     .order("starts_at", { ascending: true })
     .limit(limit);
 
-  if (error) return [];
+  if (error) {
+    const fallback = await supabase
+      .from("events")
+      .select(EVENT_SELECT_BASE)
+      .eq("series_id", seriesId)
+      .eq("status", "published")
+      .or(activeEventsOrFilter())
+      .order("starts_at", { ascending: true })
+      .limit(limit);
+    if (fallback.error) return [];
+    data = fallback.data as NonNullable<typeof data>;
+  }
   return (data ?? [])
     .map((row) => ({
       ...row,

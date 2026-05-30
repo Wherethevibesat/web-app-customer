@@ -37,8 +37,27 @@ export function venueFromJoin(
   return Array.isArray(venue) ? venue[0] ?? null : venue;
 }
 
+export const EVENT_SELECT_BASE =
+  "id, title, description, event_type, neighborhood, starts_at, ends_at, image_url, featured, venue_id, series_id, venue:venues(id, name, image_url, neighborhood, venue_type)";
+
 export const EVENT_SELECT =
   "id, title, description, event_type, neighborhood, starts_at, ends_at, image_url, featured, homepage_featured, featured_starts_at, featured_ends_at, venue_id, series_id, venue:venues(id, name, image_url, neighborhood, venue_type)";
+
+function mapEventRow(row: Record<string, unknown>): Event {
+  return {
+    ...row,
+    venue: venueFromJoin(row.venue as EventVenue | EventVenue[] | null),
+  } as Event;
+}
+
+function isMissingFeaturedColumnError(error: { message?: string } | null) {
+  const message = error?.message?.toLowerCase() ?? "";
+  return (
+    message.includes("homepage_featured") ||
+    message.includes("featured_starts_at") ||
+    message.includes("featured_ends_at")
+  );
+}
 
 export async function listPublishedEvents(options?: {
   upcomingOnly?: boolean;
@@ -84,21 +103,32 @@ export async function listPublishedEvents(options?: {
     query = query.limit(options.limit);
   }
 
-  const { data, error } = await query;
-  if (error) {
-    const fallback = await supabase
+  let { data, error } = await query;
+  if (error && isMissingFeaturedColumnError(error)) {
+    let fallbackQuery = supabase
       .from("events")
-      .select("*")
+      .select(EVENT_SELECT_BASE)
+      .eq("status", "published")
       .order("starts_at", { ascending: true });
+    if (options?.excludeSeries) fallbackQuery = fallbackQuery.is("series_id", null);
+    if (options?.upcomingOnly !== false) fallbackQuery = fallbackQuery.or(activeEventsOrFilter());
+    if (options?.featuredOnly) fallbackQuery = fallbackQuery.eq("featured", true);
+    if (options?.eventType) fallbackQuery = fallbackQuery.eq("event_type", options.eventType);
+    if (neighborhoodFilters?.length === 1) {
+      fallbackQuery = fallbackQuery.eq("neighborhood", neighborhoodFilters[0]);
+    } else if (neighborhoodFilters && neighborhoodFilters.length > 1) {
+      fallbackQuery = fallbackQuery.in("neighborhood", neighborhoodFilters);
+    }
+    if (options?.limit) fallbackQuery = fallbackQuery.limit(options.limit);
+    const fallback = await fallbackQuery;
     if (fallback.error) throw fallback.error;
-    return (fallback.data ?? []) as Event[];
+    data = fallback.data as NonNullable<typeof data>;
+    error = null;
   }
+  if (error) throw error;
 
   return (data ?? [])
-    .map((row) => ({
-      ...row,
-      venue: venueFromJoin(row.venue as EventVenue | EventVenue[] | null),
-    }))
+    .map((row) => mapEventRow(row as Record<string, unknown>))
     .filter((row) =>
       options?.upcomingOnly === false ? true : eventIsActive(row as Event),
     )
@@ -123,29 +153,48 @@ export async function listEventsByVenue(venueId: string): Promise<Event[]> {
     .or(activeEventsOrFilter())
     .order("starts_at", { ascending: true })
     .limit(12);
-  if (error) return [];
+  if (error) {
+    if (!isMissingFeaturedColumnError(error)) return [];
+    const fallback = await supabase
+      .from("events")
+      .select(EVENT_SELECT_BASE)
+      .eq("venue_id", venueId)
+      .eq("status", "published")
+      .or(activeEventsOrFilter())
+      .order("starts_at", { ascending: true })
+      .limit(12);
+    if (fallback.error) return [];
+    return (fallback.data ?? [])
+      .map((row) => mapEventRow(row as Record<string, unknown>))
+      .filter((row) => eventIsActive(row)) as Event[];
+  }
   return (data ?? [])
-    .map((row) => ({
-      ...row,
-      venue: venueFromJoin(row.venue as EventVenue | EventVenue[] | null),
-    }))
-    .filter((row) => eventIsActive(row as Event)) as Event[];
+    .map((row) => mapEventRow(row as Record<string, unknown>))
+    .filter((row) => eventIsActive(row)) as Event[];
 }
 
 export async function getEvent(id: string): Promise<Event | null> {
   const supabase = await createClient();
-  const { data, error } = await supabase
+  let { data, error } = await supabase
     .from("events")
     .select(EVENT_SELECT)
     .eq("id", id)
     .eq("status", "published")
     .maybeSingle();
+  if (error && isMissingFeaturedColumnError(error)) {
+    const fallback = await supabase
+      .from("events")
+      .select(EVENT_SELECT_BASE)
+      .eq("id", id)
+      .eq("status", "published")
+      .maybeSingle();
+    if (fallback.error) throw fallback.error;
+    data = fallback.data as NonNullable<typeof data>;
+    error = null;
+  }
   if (error) throw error;
   if (!data) return null;
-  return {
-    ...data,
-    venue: venueFromJoin(data.venue as EventVenue | EventVenue[] | null),
-  } as Event;
+  return mapEventRow(data as Record<string, unknown>);
 }
 
 export async function getEventTypes(): Promise<string[]> {
@@ -254,11 +303,20 @@ export async function listPastEventsByVenue(venueId: string, limit = 6): Promise
     .or(pastEventsOrFilter())
     .order("starts_at", { ascending: false })
     .limit(limit);
-  if (error) return [];
-  return (data ?? []).map((row) => ({
-    ...row,
-    venue: venueFromJoin(row.venue as EventVenue | EventVenue[] | null),
-  })) as Event[];
+  if (error) {
+    if (!isMissingFeaturedColumnError(error)) return [];
+    const fallback = await supabase
+      .from("events")
+      .select(EVENT_SELECT_BASE)
+      .eq("venue_id", venueId)
+      .eq("status", "published")
+      .or(pastEventsOrFilter())
+      .order("starts_at", { ascending: false })
+      .limit(limit);
+    if (fallback.error) return [];
+    return (fallback.data ?? []).map((row) => mapEventRow(row as Record<string, unknown>));
+  }
+  return (data ?? []).map((row) => mapEventRow(row as Record<string, unknown>));
 }
 
 export type VenueVipPackage = VipPackage & {
