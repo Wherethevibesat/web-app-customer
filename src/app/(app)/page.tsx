@@ -5,7 +5,7 @@ import { HeroVideoBackground } from "@/components/hero-video-background";
 import { HomeHeroSearch } from "@/components/home-hero-search";
 import { SectionHeading } from "@/components/section-heading";
 import { VenueCard } from "@/components/venue-card";
-import { browseItemKey, listBrowseFeed } from "@/lib/browse-events";
+import { browseItemKey, listBrowseFeed, listHomepageFeaturedItems } from "@/lib/browse-events";
 import { getEventTypes } from "@/lib/data/events";
 import { listNeighborhoodOptions } from "@/lib/data/neighborhoods";
 import { listVenues } from "@/lib/data/venues";
@@ -16,7 +16,7 @@ const HERO_VIDEO_POSTER =
 
 export default async function HomePage() {
   const [featuredItems, upcomingItems, venues, neighborhoods, eventTypes] = await Promise.all([
-    listBrowseFeed({ homepageFeaturedOnly: true, limit: 3 }).catch(() => []),
+    listHomepageFeaturedItems(3).catch(() => []),
     listBrowseFeed({ limit: 8 }).catch(() => []),
     listVenues().catch(() => []),
     listNeighborhoodOptions().catch(() => []),

@@ -185,6 +185,14 @@ export async function searchBrowseFeed(
   }).slice(0, options?.limit ?? 40);
 }
 
+export async function listHomepageFeaturedItems(limit = 3): Promise<BrowseItem[]> {
+  const featured = await listBrowseFeed({ homepageFeaturedOnly: true, limit });
+  if (featured.length > 0) return featured;
+
+  const upcoming = await listBrowseFeed({ limit });
+  return upcoming.slice(0, limit);
+}
+
 export function browseItemKey(item: BrowseItem): string {
   return item.kind === "event" ? `event-${item.event.id}` : `series-${item.series.id}`;
 }
