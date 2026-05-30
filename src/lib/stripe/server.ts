@@ -172,6 +172,108 @@ export async function getActiveConnectedStripeAccount(
   return account.id;
 }
 
+const COMMISSION_TYPES: Record<string, string> = {
+  vip_order: "vip_commission",
+  event_registration: "event_ticket_commission",
+  driver_booking: "driver_booking_commission",
+};
+
+export async function recordPlatformTransaction(params: {
+  userId: string | null;
+  type: string;
+  amount: number;
+  description: string;
+  status: "completed" | "failed" | "pending";
+  paymentIntentId: string;
+  metadata?: Record<string, unknown>;
+}) {
+  const admin = createAdminClient();
+  const { data: existing } = await admin
+    .from("platform_transactions")
+    .select("id")
+    .eq("stripe_payment_intent_id", params.paymentIntentId)
+    .eq("type", params.type)
+    .maybeSingle();
+  if (existing?.id) return;
+
+  const { error } = await admin.from("platform_transactions").insert({
+    user_id: params.userId,
+    type: params.type,
+    amount: params.amount,
+    description: params.description,
+    status: params.status,
+    stripe_payment_intent_id: params.paymentIntentId,
+    metadata: params.metadata ?? {},
+  });
+  if (error && error.code !== "23505") throw error;
+}
+
+async function recordMarketplaceCommission(intent: Stripe.PaymentIntent) {
+  const feeCents = intent.application_fee_amount ?? 0;
+  if (feeCents <= 0 || intent.status !== "succeeded") return;
+
+  const paymentType = intent.metadata.type ?? (intent.metadata.vip_package_id ? "vip_order" : "");
+  const commissionType = COMMISSION_TYPES[paymentType];
+  if (!commissionType) return;
+
+  const labels: Record<string, string> = {
+    vip_commission: "VIP sale commission",
+    event_ticket_commission: "Event ticket commission",
+    driver_booking_commission: "Driver booking commission",
+  };
+
+  await recordPlatformTransaction({
+    userId: intent.metadata.user_id ?? null,
+    type: commissionType,
+    amount: feeCents / 100,
+    description: labels[commissionType] ?? "Marketplace commission",
+    status: "completed",
+    paymentIntentId: intent.id,
+    metadata: {
+      payment_type: paymentType,
+      destination_account_id: intent.metadata.destination_account_id ?? null,
+    },
+  });
+}
+
+export async function handlePaymentIntentFailure(intent: Stripe.PaymentIntent) {
+  const paymentType = intent.metadata.type ?? (intent.metadata.vip_package_id ? "vip_order" : "");
+
+  if (paymentType === "vip_order" || intent.metadata.vip_package_id) {
+    const vipPackageId = intent.metadata.vip_package_id;
+    const userId = intent.metadata.user_id;
+    if (vipPackageId && userId) {
+      await recordVipOrder({
+        userId,
+        vipPackageId,
+        eventId: intent.metadata.event_id || null,
+        amount: intent.amount / 100,
+        paymentIntentId: intent.id,
+        status: "failed",
+      });
+    }
+    return;
+  }
+
+  if (paymentType === "driver_booking") {
+    const admin = createAdminClient();
+    const now = new Date().toISOString();
+    const bookingId = intent.metadata.booking_id;
+    if (bookingId) {
+      await admin
+        .from("driver_bookings")
+        .update({ status: "cancelled", updated_at: now })
+        .eq("id", bookingId)
+        .eq("status", "pending_payment");
+    }
+    await admin
+      .from("driver_bookings")
+      .update({ status: "cancelled", updated_at: now })
+      .eq("stripe_payment_intent_id", intent.id)
+      .eq("status", "pending_payment");
+  }
+}
+
 export async function confirmDriverBookingPayment(params: {
   bookingId: string;
   userId: string;
@@ -235,6 +337,7 @@ export async function fulfillStripePaymentIntent(
       void sendDriverBookingPaidNotifications(bookingId).catch((err) =>
         console.error("[email] driver booking paid notifications failed:", err),
       );
+      await recordMarketplaceCommission(intent);
     }
 
     return { kind: "driver_booking", updated: result.updated };
@@ -255,6 +358,7 @@ export async function fulfillStripePaymentIntent(
       amountCents: intent.amount_received ?? intent.amount,
       paymentIntentId: intent.id,
     });
+    await recordMarketplaceCommission(intent);
     return { kind: "event_registration", updated: true };
   }
 
@@ -271,6 +375,7 @@ export async function fulfillStripePaymentIntent(
       paymentIntentId: intent.id,
       status: intent.status === "succeeded" ? "paid" : "failed",
     });
+    await recordMarketplaceCommission(intent);
     return { kind: "vip_order", updated: true };
   }
 

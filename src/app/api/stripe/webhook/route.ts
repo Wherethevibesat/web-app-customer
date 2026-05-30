@@ -4,7 +4,7 @@ import {
   fulfillStripePaymentIntent,
   getStripe,
   getStripeWebhookSecret,
-  recordVipOrder,
+  handlePaymentIntentFailure,
 } from "@/lib/stripe/server";
 
 export const runtime = "nodejs";
@@ -38,19 +38,8 @@ export async function POST(request: Request) {
       case "payment_intent.payment_failed":
       case "payment_intent.canceled": {
         const intent = asPaymentIntent(event.data.object);
-        if (intent && (intent.metadata.type === "vip_order" || intent.metadata.vip_package_id)) {
-          const vipPackageId = intent.metadata.vip_package_id;
-          const userId = intent.metadata.user_id;
-          if (vipPackageId && userId) {
-            await recordVipOrder({
-              userId,
-              vipPackageId,
-              eventId: intent.metadata.event_id || null,
-              amount: intent.amount / 100,
-              paymentIntentId: intent.id,
-              status: "failed",
-            });
-          }
+        if (intent) {
+          await handlePaymentIntentFailure(intent);
         }
         break;
       }

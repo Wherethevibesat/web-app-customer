@@ -14,7 +14,7 @@ const FAQ = [
   },
   {
     q: "Can I buy VIP packages on the web?",
-    a: "VIP package details are shown on event pages. Complete purchases in the WTVA mobile app today; web checkout is coming soon.",
+    a: "Yes. Sign in on the web app, open an event with VIP packages, and complete checkout with card. Paid event tickets and driver bookings also support web checkout.",
   },
   {
     q: "I'm a venue owner — where do I sign up?",
