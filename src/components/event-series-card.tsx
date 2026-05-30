@@ -19,12 +19,12 @@ export function EventSeriesCard({
     <Link
       href={`/events/series/${series.id}`}
       className={`group block overflow-hidden rounded-xl border border-wtva-dark-300 bg-wtva-card transition-all hover:border-wtva-muted hover:shadow-lg ${
-        large ? "md:flex md:flex-row" : ""
+        large ? "flex flex-row" : ""
       }`}
     >
       <div
-        className={`relative bg-wtva-dark-400 ${
-          large ? "aspect-[16/9] md:aspect-auto md:w-2/5 md:min-h-[200px]" : "aspect-[16/10]"
+        className={`relative shrink-0 bg-wtva-dark-400 ${
+          large ? "w-2/5 min-h-[140px] self-stretch" : "aspect-[16/10]"
         }`}
       >
         {(series.image_url ?? next.image_url) ? (
@@ -50,11 +50,11 @@ export function EventSeriesCard({
           {series.event_type}
         </span>
       </div>
-      <div className={`p-5 ${large ? "md:flex md:flex-1 md:flex-col md:justify-center" : ""}`}>
+      <div className={`min-w-0 p-4 ${large ? "flex flex-1 flex-col justify-center sm:p-5" : "p-5"}`}>
         <p className="text-xs font-semibold uppercase tracking-wide text-wtva-muted">
           {schedule} · Next: {formatEventDate(next.starts_at)} · {formatEventTime(next.starts_at)}
         </p>
-        <h3 className={`mt-1 font-bold group-hover:underline ${large ? "text-xl md:text-2xl" : "text-lg"}`}>
+        <h3 className={`mt-1 font-bold group-hover:underline ${large ? "text-base sm:text-lg" : "text-lg"}`}>
           {series.title}
         </h3>
         {series.venue?.name && (

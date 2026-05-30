@@ -68,7 +68,7 @@ export default async function HomePage() {
               subtitle="Sponsored placements"
               href="/discover/events?featured=1"
             />
-            <div className="grid gap-6 lg:grid-cols-1">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {featuredItems.map((item) => (
                 <BrowseEventCard key={browseItemKey(item)} item={item} large />
               ))}
