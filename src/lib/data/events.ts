@@ -59,6 +59,36 @@ function isMissingFeaturedColumnError(error: { message?: string } | null) {
   );
 }
 
+function isWithinHomepageFeaturedWindow(
+  event: Pick<Event, "featured_starts_at" | "featured_ends_at">,
+  now = Date.now(),
+) {
+  const startsAt = event.featured_starts_at ? new Date(event.featured_starts_at).getTime() : null;
+  const endsAt = event.featured_ends_at ? new Date(event.featured_ends_at).getTime() : null;
+  if (startsAt && startsAt > now) return false;
+  if (endsAt && endsAt < now) return false;
+  return true;
+}
+
+export function dedupeEventsBySeries(events: Event[]): Event[] {
+  const seen = new Set<string>();
+  const result: Event[] = [];
+  for (const event of events) {
+    const key = event.series_id ?? event.id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(event);
+  }
+  return result;
+}
+
+function matchesHomepageFeatured(event: Event) {
+  if (event.homepage_featured) {
+    return isWithinHomepageFeaturedWindow(event);
+  }
+  return Boolean(event.featured);
+}
+
 export async function listPublishedEvents(options?: {
   upcomingOnly?: boolean;
   featuredOnly?: boolean;
@@ -86,7 +116,7 @@ export async function listPublishedEvents(options?: {
     query = query.eq("featured", true);
   }
   if (options?.homepageFeaturedOnly) {
-    query = query.eq("homepage_featured", true);
+    query = query.or("homepage_featured.eq.true,featured.eq.true");
   }
   if (options?.eventType) {
     query = query.eq("event_type", options.eventType);
@@ -113,6 +143,7 @@ export async function listPublishedEvents(options?: {
     if (options?.excludeSeries) fallbackQuery = fallbackQuery.is("series_id", null);
     if (options?.upcomingOnly !== false) fallbackQuery = fallbackQuery.or(activeEventsOrFilter());
     if (options?.featuredOnly) fallbackQuery = fallbackQuery.eq("featured", true);
+    if (options?.homepageFeaturedOnly) fallbackQuery = fallbackQuery.eq("featured", true);
     if (options?.eventType) fallbackQuery = fallbackQuery.eq("event_type", options.eventType);
     if (neighborhoodFilters?.length === 1) {
       fallbackQuery = fallbackQuery.eq("neighborhood", neighborhoodFilters[0]);
@@ -134,12 +165,7 @@ export async function listPublishedEvents(options?: {
     )
     .filter((row) => {
       if (!options?.homepageFeaturedOnly) return true;
-      const startsAt = row.featured_starts_at ? new Date(row.featured_starts_at).getTime() : null;
-      const endsAt = row.featured_ends_at ? new Date(row.featured_ends_at).getTime() : null;
-      const now = Date.now();
-      if (startsAt && startsAt > now) return false;
-      if (endsAt && endsAt < now) return false;
-      return true;
+      return matchesHomepageFeatured(row);
     }) as Event[];
 }
 

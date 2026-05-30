@@ -1,5 +1,5 @@
 import type { Event } from "@/lib/data/events";
-import { listPublishedEvents } from "@/lib/data/events";
+import { dedupeEventsBySeries, listPublishedEvents } from "@/lib/data/events";
 import {
   formatRecurringSchedule,
   listPublishedEventSeries,
@@ -21,17 +21,18 @@ export async function listBrowseFeed(options?: {
   venueId?: string;
   limit?: number;
 }): Promise<BrowseItem[]> {
+  const homepageFeaturedOnly = Boolean(options?.homepageFeaturedOnly);
   const [oneOffs, series] = await Promise.all([
     listPublishedEvents({
       upcomingOnly: options?.upcomingOnly,
-      featuredOnly: options?.featuredOnly,
-      homepageFeaturedOnly: options?.homepageFeaturedOnly,
+      featuredOnly: homepageFeaturedOnly ? undefined : options?.featuredOnly,
+      homepageFeaturedOnly,
       eventType: options?.eventType,
       neighborhoods: options?.neighborhoods,
-      limit: options?.limit,
-      excludeSeries: true,
+      limit: homepageFeaturedOnly ? (options?.limit ?? 3) * 8 : options?.limit,
+      excludeSeries: homepageFeaturedOnly ? false : true,
     }),
-    options?.homepageFeaturedOnly
+    homepageFeaturedOnly
       ? Promise.resolve([])
       : listPublishedEventSeries({
           featuredOnly: options?.featuredOnly,
@@ -41,8 +42,13 @@ export async function listBrowseFeed(options?: {
         }),
   ]);
 
+  const featuredEvents = homepageFeaturedOnly ? dedupeEventsBySeries(oneOffs) : oneOffs;
+  const limitedEvents = options?.limit
+    ? featuredEvents.slice(0, options.limit)
+    : featuredEvents;
+
   const items: BrowseItem[] = [
-    ...oneOffs.map((event) => ({
+    ...limitedEvents.map((event) => ({
       kind: "event" as const,
       sortAt: event.starts_at,
       event,
@@ -56,7 +62,7 @@ export async function listBrowseFeed(options?: {
 
   items.sort((a, b) => new Date(a.sortAt).getTime() - new Date(b.sortAt).getTime());
 
-  if (options?.limit) {
+  if (options?.limit && !homepageFeaturedOnly) {
     return items.slice(0, options.limit);
   }
   return items;

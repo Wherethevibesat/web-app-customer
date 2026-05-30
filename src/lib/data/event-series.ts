@@ -164,7 +164,7 @@ export async function listPublishedEventSeries(options?: {
     if (!nextBySeries.has(seriesId)) {
       nextBySeries.set(seriesId, event);
     }
-    if (event.featured) {
+    if (event.featured || event.homepage_featured) {
       featuredBySeries.set(seriesId, true);
     }
   }
@@ -176,7 +176,9 @@ export async function listPublishedEventSeries(options?: {
     const nextOccurrence = nextBySeries.get(row.id);
     if (!recurrence || !nextOccurrence || !seriesIsActive(recurrence)) continue;
 
-    const featured = featuredBySeries.get(row.id) ?? nextOccurrence.featured ?? false;
+    const featured =
+      featuredBySeries.get(row.id) ??
+      Boolean(nextOccurrence.featured || nextOccurrence.homepage_featured);
     if (options?.featuredOnly && !featured) continue;
 
     if (options?.eventType && row.event_type !== options.eventType) continue;
@@ -271,7 +273,7 @@ export async function getEventSeries(id: string): Promise<{
   if (upcoming.length === 0) return null;
 
   const nextOccurrence = upcoming[0];
-  const featured = upcoming.some((e) => e.featured);
+  const featured = upcoming.some((e) => e.featured || e.homepage_featured);
 
   const series: EventSeriesBrowse = {
     id: row.id,
