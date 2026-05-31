@@ -7,7 +7,7 @@ import {
 } from "@/lib/data/events";
 import { activeEventsOrFilter, eventIsActive } from "@/lib/event-visibility";
 import type { DayOfWeek } from "@/lib/weekdays";
-import { weekdayShortLabel } from "@/lib/weekdays";
+import { isoWeekday, weekdayShortLabel } from "@/lib/weekdays";
 import { createClient } from "@/lib/supabase/server";
 
 export type EventRecurrence = {
@@ -56,6 +56,16 @@ function parseWeekdays(raw: number[] | null | undefined): DayOfWeek[] {
 function seriesIsActive(recurrence: EventRecurrence, now = new Date()): boolean {
   const until = new Date(`${recurrence.untilDate}T23:59:59`);
   return until.getTime() >= now.getTime();
+}
+
+/** Single-date admin events live in event_series without a recurrence rule. */
+function defaultRecurrenceForOccurrence(event: Event): EventRecurrence {
+  return {
+    freq: "weekly",
+    intervalWeeks: 1,
+    weekdays: [isoWeekday(new Date(event.starts_at)) as DayOfWeek],
+    untilDate: event.starts_at.slice(0, 10),
+  };
 }
 
 type SeriesRow = {
@@ -172,9 +182,13 @@ export async function listPublishedEventSeries(options?: {
   const results: EventSeriesBrowse[] = [];
 
   for (const row of seriesRows as SeriesRow[]) {
-    const recurrence = recurrenceBySeries.get(row.id);
     const nextOccurrence = nextBySeries.get(row.id);
-    if (!recurrence || !nextOccurrence || !seriesIsActive(recurrence)) continue;
+    if (!nextOccurrence) continue;
+
+    const storedRecurrence = recurrenceBySeries.get(row.id);
+    const recurrence =
+      storedRecurrence ?? defaultRecurrenceForOccurrence(nextOccurrence);
+    if (storedRecurrence && !seriesIsActive(storedRecurrence)) continue;
 
     const featured =
       featuredBySeries.get(row.id) ??
@@ -231,15 +245,6 @@ export async function getEventSeries(id: string): Promise<{
     .select("series_id, freq, interval_weeks, by_weekday, until_date")
     .eq("series_id", id)
     .maybeSingle();
-  if (!recurrenceRow) return null;
-
-  const recurrence: EventRecurrence = {
-    freq: "weekly",
-    intervalWeeks: recurrenceRow.interval_weeks,
-    weekdays: parseWeekdays(recurrenceRow.by_weekday),
-    untilDate: recurrenceRow.until_date,
-  };
-  if (!seriesIsActive(recurrence)) return null;
 
   let { data: eventRows, error: seriesEventsError } = await supabase
     .from("events")
@@ -273,6 +278,15 @@ export async function getEventSeries(id: string): Promise<{
   if (upcoming.length === 0) return null;
 
   const nextOccurrence = upcoming[0];
+  const recurrence: EventRecurrence = recurrenceRow
+    ? {
+        freq: "weekly",
+        intervalWeeks: recurrenceRow.interval_weeks,
+        weekdays: parseWeekdays(recurrenceRow.by_weekday),
+        untilDate: recurrenceRow.until_date,
+      }
+    : defaultRecurrenceForOccurrence(nextOccurrence);
+  if (recurrenceRow && !seriesIsActive(recurrence)) return null;
   const featured = upcoming.some((e) => e.featured || e.homepage_featured);
 
   const series: EventSeriesBrowse = {
