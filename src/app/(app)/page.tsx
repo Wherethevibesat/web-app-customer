@@ -10,9 +10,10 @@ import { getEventTypes } from "@/lib/data/events";
 import { listNeighborhoodOptions } from "@/lib/data/neighborhoods";
 import { listVenues } from "@/lib/data/venues";
 
-const HERO_VIDEO_SRC = process.env.NEXT_PUBLIC_HERO_VIDEO_URL ?? "/videos/hero.mp4";
+const HERO_VIDEO_SRC =
+  process.env.NEXT_PUBLIC_HERO_VIDEO_URL?.trim() || "/videos/hero.mp4";
 const HERO_VIDEO_POSTER =
-  process.env.NEXT_PUBLIC_HERO_VIDEO_POSTER ?? "/videos/hero-poster.jpg";
+  process.env.NEXT_PUBLIC_HERO_VIDEO_POSTER?.trim() || "/videos/hero-poster.jpg";
 
 export default async function HomePage() {
   const [featuredItems, upcomingItems, venues, neighborhoods, eventTypes] = await Promise.all([

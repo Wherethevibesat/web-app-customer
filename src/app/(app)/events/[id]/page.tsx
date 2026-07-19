@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { MapPin, Calendar, Repeat } from "lucide-react";
+import { MapPin, Repeat } from "lucide-react";
 import { getEvent, listEventVipPackages } from "@/lib/data/events";
+import { eventImage } from "@/lib/placeholder";
 import { formatRecurringSchedule, getEventSeries } from "@/lib/data/event-series";
 import { listOffersForEvent } from "@/lib/data/promoters";
 import { PromoterOffersSection } from "@/components/promoter-offers-section";
@@ -60,13 +61,7 @@ export default async function EventDetailPage({
   return (
     <article>
       <div className="relative aspect-[21/9] max-h-[420px] w-full bg-wtva-dark-400">
-        {event.image_url ? (
-          <Image src={event.image_url} alt="" fill className="object-cover" unoptimized priority />
-        ) : (
-          <div className="flex h-full min-h-[240px] items-center justify-center">
-            <Calendar className="h-20 w-20 text-wtva-subtle opacity-30" />
-          </div>
-        )}
+        <Image src={eventImage(event.image_url)} alt="" fill className="object-cover" unoptimized priority />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
       </div>
 

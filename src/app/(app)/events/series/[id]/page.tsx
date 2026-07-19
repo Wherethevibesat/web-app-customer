@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { Calendar, MapPin, Repeat } from "lucide-react";
+import { MapPin, Repeat } from "lucide-react";
 import {
   formatRecurringSchedule,
   getEventSeries,
 } from "@/lib/data/event-series";
 import { formatEventDate, formatEventDateTime, formatEventTime } from "@/lib/format";
+import { eventImage } from "@/lib/placeholder";
 
 export async function generateMetadata({
   params,
@@ -36,18 +37,12 @@ export default async function EventSeriesPage({
 
   const { series, upcoming } = data;
   const schedule = formatRecurringSchedule(series.recurrence);
-  const heroImage = series.image_url ?? series.nextOccurrence.image_url;
+  const heroImage = eventImage(series.image_url ?? series.nextOccurrence.image_url);
 
   return (
     <article>
       <div className="relative aspect-[21/9] max-h-[420px] w-full bg-wtva-dark-400">
-        {heroImage ? (
-          <Image src={heroImage} alt="" fill className="object-cover" unoptimized priority />
-        ) : (
-          <div className="flex h-full min-h-[240px] items-center justify-center">
-            <Calendar className="h-20 w-20 text-wtva-subtle opacity-30" />
-          </div>
-        )}
+        <Image src={heroImage} alt="" fill className="object-cover" unoptimized priority />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
       </div>
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Venue } from "@/lib/data/venues";
+import { venueImage } from "@/lib/placeholder";
 
 export function VenueCard({ venue }: { venue: Venue }) {
   return (
@@ -9,13 +10,7 @@ export function VenueCard({ venue }: { venue: Venue }) {
       className="block overflow-hidden rounded-2xl border border-wtva-dark-300 bg-wtva-card shadow-card transition-all hover:-translate-y-0.5 hover:shadow-card-hover"
     >
       <div className="relative aspect-[16/10] bg-wtva-dark-400">
-        {venue.image_url ? (
-          <Image src={venue.image_url} alt="" fill className="object-cover" unoptimized />
-        ) : (
-          <div className="flex h-full items-center justify-center text-wtva-subtle text-sm">
-            No image
-          </div>
-        )}
+        <Image src={venueImage(venue.image_url)} alt="" fill className="object-cover" unoptimized />
         {venue.featured && (
           <span className="absolute left-2 top-2 rounded-full bg-accent-gradient px-2.5 py-0.5 text-xs font-semibold text-white shadow-accent">
             Featured

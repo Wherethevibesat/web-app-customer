@@ -1,9 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Calendar, Repeat } from "lucide-react";
+import { Repeat } from "lucide-react";
 import type { EventSeriesBrowse } from "@/lib/data/event-series";
 import { formatRecurringSchedule } from "@/lib/data/event-series";
 import { formatEventDate, formatEventTime } from "@/lib/format";
+import { eventImage } from "@/lib/placeholder";
 
 export function EventSeriesCard({
   series,
@@ -27,19 +28,13 @@ export function EventSeriesCard({
           large ? "w-2/5 min-h-[140px] self-stretch" : "aspect-[16/10]"
         }`}
       >
-        {(series.image_url ?? next.image_url) ? (
-          <Image
-            src={series.image_url ?? next.image_url!}
-            alt=""
-            fill
-            className="object-cover transition-transform group-hover:scale-[1.02]"
-            unoptimized
-          />
-        ) : (
-          <div className="flex h-full min-h-[140px] items-center justify-center text-wtva-subtle">
-            <Calendar className="h-12 w-12 opacity-40" />
-          </div>
-        )}
+        <Image
+          src={eventImage(series.image_url ?? next.image_url)}
+          alt=""
+          fill
+          className="object-cover transition-transform group-hover:scale-[1.02]"
+          unoptimized
+        />
         {series.featured && (
           <span className="absolute left-3 top-3 rounded bg-foreground px-2 py-0.5 text-xs font-bold text-background">
             Featured

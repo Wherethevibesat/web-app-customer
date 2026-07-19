@@ -1,8 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
-import { Calendar } from "lucide-react";
 import type { Event } from "@/lib/data/events";
 import { formatEventDate, formatEventTime } from "@/lib/format";
+import { eventImage } from "@/lib/placeholder";
 
 export function EventCard({ event, large }: { event: Event; large?: boolean }) {
   return (
@@ -17,19 +17,13 @@ export function EventCard({ event, large }: { event: Event; large?: boolean }) {
           large ? "w-2/5 min-h-[140px] self-stretch" : "aspect-[16/10]"
         }`}
       >
-        {event.image_url ? (
-          <Image
-            src={event.image_url}
-            alt=""
-            fill
-            className="object-cover transition-transform group-hover:scale-[1.02]"
-            unoptimized
-          />
-        ) : (
-          <div className="flex h-full min-h-[140px] items-center justify-center text-wtva-subtle">
-            <Calendar className="h-12 w-12 opacity-40" />
-          </div>
-        )}
+        <Image
+          src={eventImage(event.image_url)}
+          alt=""
+          fill
+          className="object-cover transition-transform group-hover:scale-[1.02]"
+          unoptimized
+        />
         {event.featured && (
           <span className="absolute left-3 top-3 rounded-full bg-accent-gradient px-2.5 py-0.5 text-xs font-bold text-white shadow-accent">
             Featured

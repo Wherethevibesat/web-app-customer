@@ -22,6 +22,7 @@ import {
 import { listOffersForVenue, listPromotersForVenue } from "@/lib/data/promoters";
 import { listPublishedDrivers } from "@/lib/data/drivers";
 import { formatEventDateTime } from "@/lib/format";
+import { venueImage } from "@/lib/placeholder";
 import { createClient } from "@/lib/supabase/server";
 
 export async function generateMetadata({
@@ -96,9 +97,7 @@ export default async function VenueDetailPage({
   return (
     <article>
       <div className="relative aspect-[21/9] max-h-[440px] w-full bg-wtva-dark-400">
-        {venue.image_url ? (
-          <Image src={venue.image_url} alt="" fill className="object-cover" unoptimized priority />
-        ) : null}
+        <Image src={venueImage(venue.image_url)} alt="" fill className="object-cover" unoptimized priority />
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/20" />
 
         <div className="absolute inset-x-0 top-0 mx-auto flex max-w-5xl px-4 pt-6 lg:px-8">

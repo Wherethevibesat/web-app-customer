@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Search, Menu, X, User } from "lucide-react";
@@ -89,15 +90,15 @@ export function SiteHeader({
   return (
     <header className="sticky top-0 z-50 border-b border-wtva-dark-300 bg-white/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-4 lg:px-8">
-        <Link href="/" className="flex shrink-0 items-center gap-2">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-gradient text-sm font-black text-white shadow-accent">
-            W
-          </span>
-          <span className="text-sm font-bold leading-tight tracking-tight lg:text-base">
-            Where The
-            <br />
-            Vibes At
-          </span>
+        <Link href="/" className="flex shrink-0 items-center" aria-label="Where The Vibes At — home">
+          <Image
+            src="/brand/wtva-logo.jpg"
+            alt="Where The Vibes At"
+            width={1024}
+            height={493}
+            priority
+            className="h-9 w-auto mix-blend-multiply lg:h-10"
+          />
         </Link>
 
         <form onSubmit={onSearch} className="hidden flex-1 max-w-xl md:flex">
