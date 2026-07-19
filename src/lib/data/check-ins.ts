@@ -1,34 +1,41 @@
 import { createClient } from "@/lib/supabase/server";
-import { CHECK_IN_POINTS } from "@/lib/ranking-rules";
 
-export async function createCheckIn(userId: string, venueId: string, caption?: string) {
+export type CheckInResult = {
+  checkInId: string;
+  basePoints: number;
+  pointsAwarded: number;
+  totalPoints: number;
+  firstVisit: boolean;
+  firstVisitBonus: number;
+  streak: boolean;
+  streakBonus: number;
+};
+
+export async function createCheckIn(
+  venueId: string,
+  caption?: string,
+  coords?: { lat: number; lng: number } | null,
+): Promise<CheckInResult> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("check_ins")
-    .insert({
-      user_id: userId,
-      venue_id: venueId,
-      caption: caption ?? null,
-      points_awarded: CHECK_IN_POINTS,
-    })
-    .select("id")
-    .single();
-  if (error) throw error;
-
-  const { data: rank } = await supabase
-    .from("user_rankings")
-    .select("total_points")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  const newPoints = (rank?.total_points ?? 0) + CHECK_IN_POINTS;
-  await supabase.from("user_rankings").upsert({
-    user_id: userId,
-    total_points: newPoints,
-    updated_at: new Date().toISOString(),
+  const { data, error } = await supabase.rpc("check_in_venue", {
+    p_venue_id: venueId,
+    p_caption: caption?.trim() ? caption.trim() : null,
+    p_lat: coords?.lat ?? null,
+    p_lng: coords?.lng ?? null,
   });
+  if (error) throw new Error(error.message || "Check-in failed");
 
-  return { checkInId: data.id as string, pointsAwarded: CHECK_IN_POINTS, totalPoints: newPoints };
+  const r = (data ?? {}) as Record<string, unknown>;
+  return {
+    checkInId: String(r.check_in_id ?? ""),
+    basePoints: Number(r.base_points ?? 0),
+    pointsAwarded: Number(r.points_awarded ?? 0),
+    totalPoints: Number(r.total_points ?? 0),
+    firstVisit: Boolean(r.first_visit),
+    firstVisitBonus: Number(r.first_visit_bonus ?? 0),
+    streak: Boolean(r.streak),
+    streakBonus: Number(r.streak_bonus ?? 0),
+  };
 }
 
 export type CheckInRow = {
@@ -60,5 +67,46 @@ export async function listMyCheckIns(userId: string): Promise<CheckInRow[]> {
     points_awarded: c.points_awarded as number,
     started_at: c.started_at as string,
     venueName: venueNameFromJoin(c.venue as { name: string } | { name: string }[] | null),
+  }));
+}
+
+export type PointsLedgerRow = {
+  id: string;
+  source: string;
+  points: number;
+  venueName: string | null;
+  created_at: string;
+};
+
+const SOURCE_LABELS: Record<string, string> = {
+  check_in: "Check-in",
+  first_visit: "First visit bonus",
+  streak: "Daily streak",
+  event_attend: "Event attendance",
+  referral: "Referral",
+  review: "Review",
+  redeem: "Reward redemption",
+  adjustment: "Adjustment",
+};
+
+export function pointsSourceLabel(source: string): string {
+  return SOURCE_LABELS[source] ?? source;
+}
+
+export async function listMyPointsLedger(userId: string): Promise<PointsLedgerRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("points_events")
+    .select("id, source, points, created_at, venue:venues(name)")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(50);
+  if (error) throw error;
+  return (data ?? []).map((row) => ({
+    id: row.id as string,
+    source: row.source as string,
+    points: row.points as number,
+    venueName: venueNameFromJoin(row.venue as { name: string } | { name: string }[] | null),
+    created_at: row.created_at as string,
   }));
 }

@@ -3,6 +3,29 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
+type CheckInSuccess = {
+  pointsAwarded: number;
+  basePoints: number;
+  totalPoints: number;
+  firstVisit: boolean;
+  firstVisitBonus: number;
+  streak: boolean;
+  streakBonus: number;
+};
+
+function getCoords(): Promise<{ lat: number; lng: number } | null> {
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    return Promise.resolve(null);
+  }
+  return new Promise((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 },
+    );
+  });
+}
+
 export function CheckInForm({
   venues,
   defaultVenueId,
@@ -24,29 +47,35 @@ export function CheckInForm({
   }, [defaultVenueId, venues]);
   const [caption, setCaption] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
+  const [success, setSuccess] = useState<CheckInSuccess | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!venueId) return;
     setLoading(true);
-    setResult(null);
+    setSuccess(null);
+    setError(null);
+
+    const coords = await getCoords();
     const res = await fetch("/api/check-ins", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ venueId, caption }),
+      body: JSON.stringify({ venueId, caption, lat: coords?.lat, lng: coords?.lng }),
     });
     const body = await res.json().catch(() => ({}));
     setLoading(false);
+
     if (res.status === 401) {
       router.push("/auth/login?next=/check-in");
       return;
     }
     if (!res.ok) {
-      setResult(body.error ?? "Check-in failed");
+      setError(body.error ?? "Check-in failed");
       return;
     }
-    setResult(`+${body.pointsAwarded} points! Total: ${body.totalPoints}`);
+    setSuccess(body as CheckInSuccess);
+    setCaption("");
     router.refresh();
   }
 
@@ -72,13 +101,27 @@ export function CheckInForm({
           className="w-full rounded-lg border border-wtva-dark-300 bg-wtva-dark-400 px-3 py-2 text-sm"
         />
       </div>
-      {result && <p className="text-sm text-green-400">{result}</p>}
+
+      {success && (
+        <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm">
+          <p className="font-semibold text-emerald-400">
+            +{success.pointsAwarded} points! Total: {success.totalPoints.toLocaleString()}
+          </p>
+          <ul className="mt-2 space-y-0.5 text-wtva-muted">
+            <li>Check-in · +{success.basePoints}</li>
+            {success.firstVisit && <li>First visit bonus · +{success.firstVisitBonus}</li>}
+            {success.streak && <li>Daily streak · +{success.streakBonus}</li>}
+          </ul>
+        </div>
+      )}
+      {error && <p className="text-sm text-red-400">{error}</p>}
+
       <button
         type="submit"
         disabled={loading || !venueId}
         className="w-full rounded-lg bg-foreground py-3 text-sm font-semibold text-background disabled:opacity-50"
       >
-        {loading ? "Checking in…" : "Check in (+25 points)"}
+        {loading ? "Checking in…" : "Check in"}
       </button>
     </form>
   );

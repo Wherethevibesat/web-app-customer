@@ -2,13 +2,22 @@ import Link from "next/link";
 import { Trophy } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { createClient } from "@/lib/supabase/server";
-import { getLeaderboard, getMyRanking } from "@/lib/data/rankings";
-import { pointsToNextTier, RANK_TIERS } from "@/lib/ranking-rules";
+import { getLeaderboard, getLeaderboardWindow, getMyRanking } from "@/lib/data/rankings";
+import { pointsToNextTier, RANK_TIERS, tierForPoints } from "@/lib/ranking-rules";
 
-export default async function RankingPage() {
+export default async function RankingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ range?: string }>;
+}) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
-  const leaderboard = await getLeaderboard(25).catch(() => []);
+  const { range } = await searchParams;
+  const isWeek = range === "week";
+
+  const leaderboard = isWeek
+    ? await getLeaderboardWindow(7, 25).catch(() => [])
+    : await getLeaderboard(25).catch(() => []);
 
   let myRank = null;
   if (user) {
@@ -47,9 +56,25 @@ export default async function RankingPage() {
             </div>
           )}
 
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Trophy className="h-5 w-5" /> Leaderboard
-          </h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Trophy className="h-5 w-5" /> Leaderboard
+            </h2>
+            <div className="flex rounded-lg border border-wtva-dark-300 p-0.5 text-sm">
+              <Link
+                href="/ranking"
+                className={`rounded-md px-3 py-1 font-medium ${!isWeek ? "bg-foreground text-background" : "text-wtva-muted"}`}
+              >
+                All-time
+              </Link>
+              <Link
+                href="/ranking?range=week"
+                className={`rounded-md px-3 py-1 font-medium ${isWeek ? "bg-foreground text-background" : "text-wtva-muted"}`}
+              >
+                This week
+              </Link>
+            </div>
+          </div>
           <ol className="mt-4 divide-y divide-wtva-dark-300 rounded-xl border border-wtva-dark-300 bg-wtva-card">
             {leaderboard.map((entry, i) => (
               <li
@@ -68,8 +93,12 @@ export default async function RankingPage() {
                 </span>
                 <span className="text-sm text-wtva-muted text-right">
                   {entry.points.toLocaleString()} pts
-                  <br />
-                  <span className="text-xs">{entry.tier.name}</span>
+                  {!isWeek && (
+                    <>
+                      <br />
+                      <span className="text-xs">{tierForPoints(entry.points).name}</span>
+                    </>
+                  )}
                 </span>
               </li>
             ))}

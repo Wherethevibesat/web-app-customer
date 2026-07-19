@@ -4,7 +4,7 @@ import { AccountNav } from "@/components/account-nav";
 import { PageShell } from "@/components/page-shell";
 import { createClient } from "@/lib/supabase/server";
 import { getMyRanking } from "@/lib/data/rankings";
-import { listMyCheckIns } from "@/lib/data/check-ins";
+import { listMyPointsLedger, pointsSourceLabel } from "@/lib/data/check-ins";
 import { pointsToNextTier } from "@/lib/ranking-rules";
 
 export default async function ProfilePage() {
@@ -19,7 +19,7 @@ export default async function ProfilePage() {
     .single();
 
   const ranking = await getMyRanking(user.id).catch(() => null);
-  const checkIns = await listMyCheckIns(user.id).catch(() => []);
+  const ledger = await listMyPointsLedger(user.id).catch(() => []);
 
   return (
     <PageShell title="Your account" subtitle="Manage your profile, favorites, and activity" width="wide">
@@ -47,19 +47,35 @@ export default async function ProfilePage() {
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold">Recent check-ins</h3>
-            {checkIns.length > 0 ? (
+            <h3 className="text-lg font-semibold">Points history</h3>
+            {ledger.length > 0 ? (
               <ul className="mt-4 divide-y divide-wtva-dark-300 rounded-xl border border-wtva-dark-300 bg-wtva-card">
-                {checkIns.slice(0, 10).map((c) => (
-                  <li key={c.id} className="flex justify-between px-4 py-3 text-sm">
-                    <span>{c.venueName}</span>
-                    <span className="text-green-400">+{c.points_awarded} pts</span>
+                {ledger.slice(0, 15).map((row) => (
+                  <li key={row.id} className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+                    <span className="min-w-0">
+                      <span className="font-medium">{pointsSourceLabel(row.source)}</span>
+                      {row.venueName && (
+                        <span className="text-wtva-muted"> · {row.venueName}</span>
+                      )}
+                      <span className="block text-xs text-wtva-muted">
+                        {new Date(row.created_at).toLocaleDateString(undefined, {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                    </span>
+                    <span
+                      className={row.points >= 0 ? "shrink-0 text-green-400" : "shrink-0 text-red-400"}
+                    >
+                      {row.points >= 0 ? "+" : ""}
+                      {row.points} pts
+                    </span>
                   </li>
                 ))}
               </ul>
             ) : (
               <p className="mt-4 text-sm text-wtva-muted">
-                No check-ins yet.{" "}
+                No points yet.{" "}
                 <Link href="/check-in" className="underline text-foreground">
                   Check in at a venue
                 </Link>

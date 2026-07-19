@@ -19,6 +19,23 @@ export async function getMyRanking(userId: string) {
   return { points, tier: tierForPoints(points) };
 }
 
+export async function getLeaderboardWindow(days: number, limit = 25) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("leaderboard_window", {
+    p_days: days,
+    p_limit: limit,
+  });
+  if (error) throw error;
+  return (data ?? []).map((r: Record<string, unknown>) => ({
+    points: Number(r.points ?? 0),
+    user: {
+      id: String(r.user_id ?? ""),
+      name: String(r.name ?? "Member"),
+      profile_image_url: (r.profile_image_url as string | null) ?? null,
+    },
+  }));
+}
+
 export async function getLeaderboard(limit = 20) {
   const supabase = await createClient();
   const { data, error } = await supabase
