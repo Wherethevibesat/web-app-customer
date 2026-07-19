@@ -14,7 +14,6 @@ import { VenueShareButton } from "@/components/venue-share-button";
 import { VenueTablesSection } from "@/components/venue-tables-section";
 import { VenueVipPackagesSection } from "@/components/venue-vip-packages-section";
 import { VenueHoursCard } from "@/components/venue-hours-card";
-import { VenuePhotoReel } from "@/components/venue-photo-reel";
 import { getVenue, listRelatedVenues } from "@/lib/data/venues";
 import { browseItemKey, listBrowseFeed } from "@/lib/browse-events";
 import { listPastEventsByVenue, listVenueVipPackages } from "@/lib/data/events";
@@ -22,7 +21,7 @@ import { listOffersForVenue, listPromotersForVenue } from "@/lib/data/promoters"
 import { listPublishedDrivers } from "@/lib/data/drivers";
 import { formatEventDateTime } from "@/lib/format";
 import { openingHoursRows } from "@/lib/types/opening-hours";
-import { EVENT_PLACEHOLDER, VENUE_PLACEHOLDER, venueImage } from "@/lib/placeholder";
+import { venueImage } from "@/lib/placeholder";
 import { createClient } from "@/lib/supabase/server";
 
 function extractHandle(url: string | null | undefined): string | null {
@@ -237,22 +236,6 @@ export default async function VenueDetailPage({
     .filter((link) => Boolean(link.href?.trim()))
     .map((link) => ({ href: link.href as string, label: link.label, sub: link.sub, Icon: link.Icon }));
 
-  const reelPhotos: { src: string; href?: string; placeholder?: boolean }[] = [];
-  if (venue.image_url?.trim()) {
-    reelPhotos.push({
-      src: venue.image_url,
-      href: venue.instagram_url ?? undefined,
-    });
-  }
-  const placeholderCount = Math.max(0, 6 - reelPhotos.length);
-  for (let i = 0; i < placeholderCount; i += 1) {
-    reelPhotos.push({
-      src: i % 2 === 0 ? VENUE_PLACEHOLDER : EVENT_PLACEHOLDER,
-      placeholder: true,
-    });
-  }
-  const showPhotos = Boolean(venue.instagram_url?.trim()) || Boolean(venue.image_url?.trim());
-
   return (
     <article className="pb-16">
       {/* Hero */}
@@ -403,14 +386,6 @@ export default async function VenueDetailPage({
                 </p>
               )}
             </section>
-
-            {showPhotos && (
-              <VenuePhotoReel
-                photos={reelPhotos}
-                instagramUrl={venue.instagram_url}
-                handle={igHandle}
-              />
-            )}
 
             {promoters.length > 0 && (
               <section>
