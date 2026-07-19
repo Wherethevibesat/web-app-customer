@@ -89,6 +89,17 @@ function XIcon({ className }: BrandIconProps) {
   );
 }
 
+function GlobeIcon({ className }: BrandIconProps) {
+  return <Globe className={className} />;
+}
+
+type VenueLink = {
+  href: string;
+  label: string;
+  sub?: string;
+  Icon: ComponentType<BrandIconProps>;
+};
+
 export async function generateMetadata({
   params,
 }: {
@@ -168,16 +179,16 @@ export default async function VenueDetailPage({
         ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(venue.address)}`
         : null;
 
-  const socials = [
+  const socialSources: { href: string | null; label: string; Icon: ComponentType<BrandIconProps> }[] = [
     { href: venue.instagram_url, label: "Instagram", Icon: InstagramIcon },
     { href: venue.facebook_url, label: "Facebook", Icon: FacebookIcon },
     { href: venue.tiktok_url, label: "TikTok", Icon: TikTokIcon },
     { href: venue.twitter_url, label: "X", Icon: XIcon },
-    { href: venue.website_url, label: "Website", Icon: Globe },
-  ].filter(
-    (s): s is { href: string; label: string; Icon: ComponentType<BrandIconProps> } =>
-      Boolean(s.href?.trim()),
-  );
+    { href: venue.website_url, label: "Website", Icon: GlobeIcon },
+  ];
+  const socials: VenueLink[] = socialSources
+    .filter((s) => Boolean(s.href?.trim()))
+    .map((s) => ({ href: s.href as string, label: s.label, Icon: s.Icon }));
 
   const hoursRows = openingHoursRows(venue.opening_hours).filter(
     (row) => row.label !== "Hours not set",
@@ -186,7 +197,7 @@ export default async function VenueDetailPage({
 
   const igHandle = extractHandle(venue.instagram_url);
 
-  const contactLinks = [
+  const contactSources: { href: string | null; label: string; sub: string; Icon: ComponentType<BrandIconProps> }[] = [
     {
       href: venue.instagram_url,
       label: "Instagram",
@@ -219,18 +230,12 @@ export default async function VenueDetailPage({
       href: venue.website_url,
       label: "Website",
       sub: displayHost(venue.website_url) ?? "Visit site",
-      Icon: Globe,
+      Icon: GlobeIcon,
     },
-  ].filter(
-    (
-      link,
-    ): link is {
-      href: string;
-      label: string;
-      sub: string;
-      Icon: ComponentType<BrandIconProps>;
-    } => Boolean(link.href?.trim()),
-  );
+  ];
+  const contactLinks: VenueLink[] = contactSources
+    .filter((link) => Boolean(link.href?.trim()))
+    .map((link) => ({ href: link.href as string, label: link.label, sub: link.sub, Icon: link.Icon }));
 
   const reelPhotos: { src: string; href?: string; placeholder?: boolean }[] = [];
   if (venue.image_url?.trim()) {
