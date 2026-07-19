@@ -469,7 +469,7 @@ async function selectWithLlm(input: {
           "You are the Vibes Concierge for a Houston nightlife discovery app.",
           "Recommend ONLY from the provided candidate list. Never invent venues, events, dates, prices, or details.",
           "Each pick's `ref` MUST be one of the candidate refs. Pick the best 3-6 matches for the user's intent (vibe, timing, neighborhood, event type). Order best first.",
-          "Write a short, specific `reason` per pick grounded in that candidate's real fields (type, area, timing, rating). Do not claim anything not present in the data.",
+          "Write ONE short, specific `reason` sentence per pick (max ~18 words) grounded in that candidate's real fields (type, area, timing, rating). Do not claim anything not present in the data.",
           "The app does NOT track ticket prices. If the user asks about budget/cheap/free, say you can't filter by exact price and suggest featured or no-cover-style options without inventing prices.",
           "Set needsClarification=true ONLY if the request is truly unusable (empty or contradictory). A vibe alone (e.g. 'somewhere chill') is enough — do not over-ask.",
           "reply: 1-2 warm, concise sentences. suggestedChips: up to 5 short helpful follow-up refinements.",
@@ -744,7 +744,16 @@ export async function runConcierge(input: ConciergeRequest): Promise<ConciergeRe
   }
 
   // Bounded, relevant pool handed to the LLM for grounded semantic ranking.
-  const pool = candidates.slice(0, 40);
+  // For a "both" intent, guarantee venues a share of the pool so time-proximity
+  // scoring on events can't crowd venues out entirely.
+  let pool: Candidate[];
+  if (wants === "both") {
+    const topEvents = candidates.filter((c) => c.kind === "event").slice(0, 28);
+    const topVenues = candidates.filter((c) => c.kind === "venue").slice(0, 14);
+    pool = [...topEvents, ...topVenues].sort((a, b) => b.score - a.score).slice(0, 40);
+  } else {
+    pool = candidates.slice(0, 40);
+  }
   const byRef = new Map<string, Candidate>();
   const llmCandidates: LlmCandidate[] = pool.map((c, i) => {
     const ref = `${c.kind === "event" ? "e" : "v"}${i}`;
