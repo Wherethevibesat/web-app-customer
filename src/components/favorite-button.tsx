@@ -40,7 +40,7 @@ export function FavoriteButton({
       onClick={toggle}
       className={
         variant === "labeled"
-          ? "inline-flex items-center gap-2 rounded-full border border-wtva-dark-300 px-6 py-3 text-sm font-semibold text-foreground hover:border-accent hover:text-accent disabled:opacity-50"
+          ? "inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-wtva-dark-300 px-4 py-2.5 text-sm font-semibold text-foreground hover:border-accent hover:text-accent disabled:opacity-50"
           : "rounded-full border border-wtva-dark-300 p-2 disabled:opacity-50"
       }
       aria-label={variant === "labeled" ? undefined : "Favorite"}
