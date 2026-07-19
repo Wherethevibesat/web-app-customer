@@ -53,10 +53,20 @@ export function ConciergeWidget({ floating = true }: { floating?: boolean }) {
     if (!prompt) return;
     setBusy(true);
     if (!nextQuery) setQuery("");
+    const history = turns
+      .flatMap((turn) =>
+        turn.result
+          ? [
+              { role: "user" as const, content: turn.query },
+              { role: "assistant" as const, content: turn.result.reply },
+            ]
+          : [],
+      )
+      .slice(-6);
     const res = await fetch("/api/ai/concierge", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query: prompt, sessionId }),
+      body: JSON.stringify({ query: prompt, sessionId, history }),
     });
     const data = (await res.json().catch(() => ({}))) as Partial<ConciergeResponse> & {
       error?: string;
@@ -179,7 +189,10 @@ export function ConciergeWidget({ floating = true }: { floating?: boolean }) {
                       </div>
                       <p className="mt-1 font-semibold">{r.title}</p>
                       <p className="text-sm text-wtva-muted">{r.subtitle}</p>
-                      {r.priceHint ? <p className="mt-1 text-xs text-wtva-subtle">{r.priceHint}</p> : null}
+                      {r.reason ? <p className="mt-1 text-xs text-wtva-subtle">{r.reason}</p> : null}
+                      {r.priceHint ? (
+                        <p className="mt-1 text-xs font-medium text-accent">{r.priceHint}</p>
+                      ) : null}
                     </Link>
                   ))}
                 </div>
