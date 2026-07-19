@@ -11,13 +11,13 @@ import { CHECK_IN_POINTS } from "@/lib/ranking-rules";
 export default async function CheckInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ venue?: string }>;
+  searchParams: Promise<{ venue?: string; token?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login?next=/check-in");
 
-  const { venue: venueId } = await searchParams;
+  const { venue: venueId, token } = await searchParams;
   const all = await listVenues().catch(() => []);
   const venues = all.map((v) => ({ id: v.id, name: v.name }));
 
@@ -30,7 +30,7 @@ export default async function CheckInPage({
       <AccountNav />
       <div className="mt-8 grid gap-8 lg:grid-cols-2">
         <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-6 md:p-8">
-          <CheckInForm venues={venues} defaultVenueId={venueId} />
+          <CheckInForm venues={venues} defaultVenueId={venueId} token={token} />
         </div>
         <aside className="space-y-4">
           <div className="rounded-xl border border-wtva-dark-300 bg-wtva-card p-6">

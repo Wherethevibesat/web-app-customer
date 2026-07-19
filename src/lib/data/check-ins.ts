@@ -15,6 +15,7 @@ export async function createCheckIn(
   venueId: string,
   caption?: string,
   coords?: { lat: number; lng: number; accuracy?: number } | null,
+  token?: string | null,
 ): Promise<CheckInResult> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("check_in_venue", {
@@ -23,6 +24,7 @@ export async function createCheckIn(
     p_lat: coords?.lat ?? null,
     p_lng: coords?.lng ?? null,
     p_accuracy: coords?.accuracy ?? null,
+    p_token: token?.trim() ? token.trim() : null,
   });
   if (error) throw new Error(error.message || "Check-in failed");
 

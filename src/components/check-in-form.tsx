@@ -36,9 +36,11 @@ function getCoords(): Promise<Coords | null> {
 export function CheckInForm({
   venues,
   defaultVenueId,
+  token,
 }: {
   venues: { id: string; name: string }[];
   defaultVenueId?: string;
+  token?: string;
 }) {
   const router = useRouter();
   const initial =
@@ -74,6 +76,7 @@ export function CheckInForm({
         lat: coords?.lat,
         lng: coords?.lng,
         accuracy: coords?.accuracy,
+        token,
       }),
     });
     const body = await res.json().catch(() => ({}));
@@ -114,6 +117,12 @@ export function CheckInForm({
           className="w-full rounded-lg border border-wtva-dark-300 bg-wtva-dark-400 px-3 py-2 text-sm"
         />
       </div>
+
+      {token && (
+        <p className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-400">
+          Venue QR scanned — you&apos;re verified on-site.
+        </p>
+      )}
 
       {success && (
         <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm">
