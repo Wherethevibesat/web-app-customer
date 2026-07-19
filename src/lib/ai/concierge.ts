@@ -53,6 +53,9 @@ export type ConciergeResponse = {
   debug: {
     candidateCount: number;
     rankedCount: number;
+    llmConfigured?: boolean;
+    llmReturned?: boolean;
+    llmUsed?: boolean;
   };
 };
 
@@ -497,12 +500,19 @@ async function selectWithLlm(input: {
       body: JSON.stringify(payload),
       signal: controller.signal,
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      console.error("[concierge] OpenAI HTTP", res.status, errText.slice(0, 400));
+      return null;
+    }
     const data = (await res.json()) as {
       choices?: Array<{ message?: { content?: string } }>;
     };
     const raw = data.choices?.[0]?.message?.content;
-    if (!raw) return null;
+    if (!raw) {
+      console.error("[concierge] OpenAI returned empty content");
+      return null;
+    }
     const parsed = JSON.parse(raw) as Partial<LlmSelection>;
     if (typeof parsed.reply !== "string") return null;
     return {
@@ -522,7 +532,8 @@ async function selectWithLlm(input: {
         ? parsed.suggestedChips.filter((c) => typeof c === "string").slice(0, 6)
         : [],
     };
-  } catch {
+  } catch (err) {
+    console.error("[concierge] OpenAI call failed", err instanceof Error ? err.message : err);
     return null;
   } finally {
     clearTimeout(timeout);
@@ -844,6 +855,9 @@ export async function runConcierge(input: ConciergeRequest): Promise<ConciergeRe
     debug: {
       candidateCount: candidates.length,
       rankedCount: recommendations.length,
+      llmConfigured: Boolean(process.env.OPENAI_API_KEY),
+      llmReturned: Boolean(llm),
+      llmUsed: Boolean(llm && llmPicks && llmPicks.length > 0),
     },
   };
 }
