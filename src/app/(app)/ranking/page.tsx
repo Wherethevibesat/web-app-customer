@@ -15,7 +15,11 @@ export default async function RankingPage({
   const { range } = await searchParams;
   const isWeek = range === "week";
 
-  const leaderboard = isWeek
+  type LeaderboardEntry = {
+    points: number;
+    user: { id: string; name: string; profile_image_url: string | null };
+  };
+  const leaderboard: LeaderboardEntry[] = isWeek
     ? await getLeaderboardWindow(7, 25).catch(() => [])
     : await getLeaderboard(25).catch(() => []);
 

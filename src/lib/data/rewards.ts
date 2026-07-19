@@ -30,6 +30,12 @@ function nameFromJoin(rel: { name: string } | { name: string }[] | null): string
   return r?.name ?? null;
 }
 
+function titleFromJoin(rel: { title: string } | { title: string }[] | null): string | null {
+  if (!rel) return null;
+  const r = Array.isArray(rel) ? rel[0] : rel;
+  return r?.title ?? null;
+}
+
 export async function listRewards(): Promise<Reward[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -72,7 +78,7 @@ export async function listMyRedemptions(userId: string): Promise<Redemption[]> {
     cost_points: r.cost_points as number,
     created_at: r.created_at as string,
     expires_at: r.expires_at as string | null,
-    rewardTitle: nameFromJoin(r.reward as { name: string } | { name: string }[] | null) ?? "Reward",
+    rewardTitle: titleFromJoin(r.reward as { title: string } | { title: string }[] | null) ?? "Reward",
     venueName: nameFromJoin(r.venue as { name: string } | { name: string }[] | null),
   }));
 }
