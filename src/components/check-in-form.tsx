@@ -13,15 +13,22 @@ type CheckInSuccess = {
   streakBonus: number;
 };
 
-function getCoords(): Promise<{ lat: number; lng: number } | null> {
+type Coords = { lat: number; lng: number; accuracy: number };
+
+function getCoords(): Promise<Coords | null> {
   if (typeof navigator === "undefined" || !navigator.geolocation) {
     return Promise.resolve(null);
   }
   return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
-      (pos) => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) =>
+        resolve({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+        }),
       () => resolve(null),
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 },
     );
   });
 }
@@ -61,7 +68,13 @@ export function CheckInForm({
     const res = await fetch("/api/check-ins", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ venueId, caption, lat: coords?.lat, lng: coords?.lng }),
+      body: JSON.stringify({
+        venueId,
+        caption,
+        lat: coords?.lat,
+        lng: coords?.lng,
+        accuracy: coords?.accuracy,
+      }),
     });
     const body = await res.json().catch(() => ({}));
     setLoading(false);
@@ -123,6 +136,9 @@ export function CheckInForm({
       >
         {loading ? "Checking in…" : "Check in"}
       </button>
+      <p className="text-center text-xs text-wtva-muted">
+        Location is used to confirm you&apos;re at the venue.
+      </p>
     </form>
   );
 }
