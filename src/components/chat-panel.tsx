@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ChatMessageRow } from "@/lib/data/messages";
+import { buttonClass } from "@/lib/button";
 
 type Props = {
   threadId: string;
@@ -109,7 +110,7 @@ export function ChatPanel({
         <button
           type="submit"
           disabled={sending || !body.trim()}
-          className="rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background disabled:opacity-50"
+          className={buttonClass("primary", "sm")}
         >
           Send
         </button>

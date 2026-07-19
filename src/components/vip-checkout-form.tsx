@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
+import { buttonClass } from "@/lib/button";
 import {
   Elements,
   PaymentElement,
@@ -68,7 +69,7 @@ function CheckoutForm({
       <button
         type="submit"
         disabled={!stripe || loading}
-        className="w-full rounded-lg bg-foreground py-3 text-sm font-semibold text-background disabled:opacity-50"
+        className={buttonClass("primary", "lg", "w-full")}
       >
         {loading ? "Processing…" : "Pay now"}
       </button>

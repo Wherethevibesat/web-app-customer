@@ -1,5 +1,6 @@
 import { DriverCompanyCard } from "@/components/driver-company-card";
 import { listPublishedDrivers } from "@/lib/data/drivers";
+import { buttonClass } from "@/lib/button";
 
 export default async function DriversPage({
   searchParams,
@@ -29,10 +30,7 @@ export default async function DriversPage({
           placeholder="City"
           className="w-full rounded-lg border border-wtva-dark-300 bg-wtva-card px-4 py-3 text-sm sm:w-48"
         />
-        <button
-          type="submit"
-          className="rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background"
-        >
+        <button type="submit" className={buttonClass("primary", "lg")}>
           Search
         </button>
       </form>

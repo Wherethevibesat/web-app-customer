@@ -11,15 +11,24 @@ export default async function AboutPage() {
   return (
     <PageShell
       title="About Where The Vibes At"
-      subtitle="Houston nightlife, events, and where the crowd is going"
+      subtitle="Nightlife, events, and where the crowd is going — live in Houston and expanding city by city"
       width="narrow"
     >
       <div className="prose prose-invert max-w-none space-y-6 text-wtva-muted leading-relaxed">
         <p>
-          WTVA helps you find what&apos;s happening in Houston — day parties, club nights,
+          WTVA helps you find what&apos;s happening in your city — day parties, club nights,
           happy hours, live DJ sets, age-specific nights, and VIP at lounges and nightlife
           spots. Browse by neighborhood, event type, day, or date, and filter down to what
           fits your night.
+        </p>
+        <p>
+          We&apos;re live in <strong className="text-foreground">Houston</strong> today and rolling
+          out to more cities — Dallas, Atlanta, Miami, Washington DC, Chicago, and beyond. Don&apos;t
+          see your city yet?{" "}
+          <Link href="/request-city" className="text-foreground underline">
+            Request a city
+          </Link>{" "}
+          and we&apos;ll notify you the moment we launch there.
         </p>
         <p>
           Recurring weekly events show as one series with the next date upfront; tap through

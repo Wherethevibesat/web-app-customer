@@ -3,9 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
-import { Search, Menu, X, User } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Search, Menu, X, User, ChevronDown, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { buttonClass } from "@/lib/button";
 
 const NAV = [
   { href: "/discover", label: "Discover" },
@@ -45,6 +46,26 @@ export function SiteHeader({
   const router = useRouter();
   const [q, setQ] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!accountOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (accountRef.current && !accountRef.current.contains(e.target as Node)) {
+        setAccountOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAccountOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [accountOpen]);
 
   function onSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -58,30 +79,65 @@ export function SiteHeader({
     <>
       <Link
         href="/check-in"
-        className="hidden rounded-full border border-wtva-dark-300 px-4 py-2 text-sm font-semibold text-wtva-muted hover:border-accent hover:text-accent sm:inline-flex"
+        className={buttonClass("secondary", "sm", "hidden sm:inline-flex")}
       >
         Check in
       </Link>
-      <Link
-        href="/profile"
-        className="inline-flex items-center gap-2 rounded-full bg-accent-gradient px-4 py-2 text-sm font-semibold text-white shadow-accent"
-      >
-        <User className="h-4 w-4" />
-        <span className="max-w-[120px] truncate">{userName}</span>
-      </Link>
+      <div className="relative" ref={accountRef}>
+        <button
+          type="button"
+          onClick={() => setAccountOpen((o) => !o)}
+          aria-haspopup="menu"
+          aria-expanded={accountOpen}
+          className={buttonClass("primary", "sm")}
+        >
+          <User className="h-4 w-4" />
+          <span className="max-w-[120px] truncate">{userName}</span>
+          <ChevronDown
+            className={cn("h-4 w-4 transition-transform", accountOpen && "rotate-180")}
+          />
+        </button>
+        {accountOpen && (
+          <div className="absolute right-0 top-full z-50 mt-2 w-56 overflow-hidden rounded-xl border border-wtva-dark-300 bg-white text-left shadow-card">
+            <div className="border-b border-wtva-dark-300 px-4 py-3">
+              <p className="text-xs text-wtva-muted">Signed in as</p>
+              <p className="truncate text-sm font-semibold">{userName}</p>
+            </div>
+            <Link
+              href="/profile"
+              onClick={() => setAccountOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-wtva-dark-400"
+            >
+              <User className="h-4 w-4 text-wtva-subtle" />
+              Profile
+            </Link>
+            <Link
+              href="/settings"
+              onClick={() => setAccountOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-wtva-dark-400"
+            >
+              <Settings className="h-4 w-4 text-wtva-subtle" />
+              Settings
+            </Link>
+            <form action="/auth/signout" method="post" className="border-t border-wtva-dark-300">
+              <button
+                type="submit"
+                className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
     </>
   ) : (
     <>
-      <Link
-        href="/auth/login"
-        className="rounded-full border border-wtva-dark-300 px-5 py-2 text-sm font-semibold text-foreground hover:border-accent hover:text-accent"
-      >
+      <Link href="/auth/login" className={buttonClass("secondary", "md")}>
         Log in
       </Link>
-      <Link
-        href="/auth/register"
-        className="rounded-full bg-accent-gradient px-5 py-2 text-sm font-semibold text-white shadow-accent"
-      >
+      <Link href="/auth/register" className={buttonClass("primary", "md")}>
         Sign up
       </Link>
     </>
@@ -135,7 +191,7 @@ export function SiteHeader({
 
         <button
           type="button"
-          className="rounded-lg p-2 text-wtva-muted hover:bg-wtva-dark-300 xl:ml-0 xl:hidden"
+          className="ml-auto rounded-lg p-2 text-wtva-muted hover:bg-wtva-dark-300 sm:ml-0 xl:hidden"
           onClick={() => setMenuOpen((o) => !o)}
           aria-label="Menu"
         >
@@ -177,20 +233,31 @@ export function SiteHeader({
                   <Link href="/check-in" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm">
                     Check in
                   </Link>
+                  <Link href="/settings" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm">
+                    Settings
+                  </Link>
+                  <form action="/auth/signout" method="post">
+                    <button
+                      type="submit"
+                      className="w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-red-600"
+                    >
+                      Sign out
+                    </button>
+                  </form>
                 </>
               ) : (
                 <>
                   <Link
                     href="/auth/login"
                     onClick={() => setMenuOpen(false)}
-                    className="rounded-lg border border-wtva-dark-300 px-3 py-2.5 text-center text-sm"
+                    className={buttonClass("secondary", "md", "w-full")}
                   >
                     Sign in
                   </Link>
                   <Link
                     href="/auth/register"
                     onClick={() => setMenuOpen(false)}
-                    className="rounded-lg bg-accent-gradient px-3 py-2.5 text-center text-sm font-semibold text-white shadow-accent"
+                    className={buttonClass("primary", "md", "w-full")}
                   >
                     Sign up
                   </Link>

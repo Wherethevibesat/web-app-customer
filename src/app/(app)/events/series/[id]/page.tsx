@@ -9,6 +9,7 @@ import {
 } from "@/lib/data/event-series";
 import { formatEventDate, formatEventDateTime, formatEventTime } from "@/lib/format";
 import { eventImage } from "@/lib/placeholder";
+import { buttonClass } from "@/lib/button";
 
 export async function generateMetadata({
   params,
@@ -117,10 +118,7 @@ export default async function EventSeriesPage({
         </section>
 
         <div className="mt-10">
-          <Link
-            href={`/events/${series.nextOccurrence.id}`}
-            className="inline-block rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background"
-          >
+          <Link href={`/events/${series.nextOccurrence.id}`} className={buttonClass("primary", "lg")}>
             View next date
           </Link>
         </div>

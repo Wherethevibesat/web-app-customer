@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { buttonClass } from "@/lib/button";
 
 type CheckInSuccess = {
   pointsAwarded: number;
@@ -141,7 +142,7 @@ export function CheckInForm({
       <button
         type="submit"
         disabled={loading || !venueId}
-        className="w-full rounded-lg bg-foreground py-3 text-sm font-semibold text-background disabled:opacity-50"
+        className={buttonClass("primary", "lg", "w-full")}
       >
         {loading ? "Checking in…" : "Check in"}
       </button>

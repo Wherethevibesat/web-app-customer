@@ -5,6 +5,7 @@ import { RewardRedeemButton } from "@/components/reward-redeem-button";
 import { createClient } from "@/lib/supabase/server";
 import { getMyRanking } from "@/lib/data/rankings";
 import { listRewards, listMyRedemptions } from "@/lib/data/rewards";
+import { buttonClass } from "@/lib/button";
 
 const TYPE_LABELS: Record<string, string> = {
   perk: "Perk",
@@ -35,10 +36,7 @@ export default async function RewardsPage() {
             <p className="text-sm text-wtva-muted">Your balance</p>
             <p className="text-2xl font-bold">{points.toLocaleString()} points</p>
           </div>
-          <Link
-            href="/check-in"
-            className="ml-auto rounded-lg border border-wtva-dark-300 px-4 py-2 text-sm font-medium hover:border-accent hover:text-accent"
-          >
+          <Link href="/check-in" className={buttonClass("secondary", "sm", "ml-auto")}>
             Earn more →
           </Link>
         </div>

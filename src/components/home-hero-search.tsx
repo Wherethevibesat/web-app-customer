@@ -1,10 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Search, SlidersHorizontal } from "lucide-react";
 import { BrowseFiltersModal } from "@/components/browse-filters-modal";
 import { eventTypeToSlug } from "@/lib/event-types";
-import { activeFilterCount, type BrowseFilters } from "@/lib/filter-url";
+import { activeFilterCount, buildBrowseUrl, type BrowseFilters } from "@/lib/filter-url";
+import { buttonClass } from "@/lib/button";
 
 type HomeHeroSearchProps = {
   neighborhoods: { name: string; slug: string }[];
@@ -15,9 +17,20 @@ export function HomeHeroSearch({
   neighborhoods,
   eventTypes,
 }: HomeHeroSearchProps) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [filters, setFilters] = useState<BrowseFilters>({});
+
+  function handleApply(next: BrowseFilters) {
+    setFilters(next);
+    router.push(
+      buildBrowseUrl("/discover/search", {
+        ...next,
+        q: query.trim() || undefined,
+      }),
+    );
+  }
 
   const modalFilters = useMemo(
     () => ({
@@ -61,7 +74,7 @@ export function HomeHeroSearch({
               <button
                 type="button"
                 onClick={() => setFiltersOpen(true)}
-                className="relative inline-flex items-center justify-center gap-2 rounded-xl border border-wtva-dark-300 px-4 py-3 text-sm font-semibold text-foreground hover:border-accent hover:text-accent"
+                className={buttonClass("secondary", "lg", "relative px-4")}
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 <span className="hidden sm:inline">Filters</span>
@@ -72,10 +85,7 @@ export function HomeHeroSearch({
                 )}
               </button>
 
-              <button
-                type="submit"
-                className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-accent-gradient px-6 py-3 text-sm font-semibold text-white shadow-accent"
-              >
+              <button type="submit" className={buttonClass("primary", "lg", "shrink-0")}>
                 <Search className="h-4 w-4" />
                 <span>Search</span>
               </button>
@@ -88,7 +98,7 @@ export function HomeHeroSearch({
         <BrowseFiltersModal
           open={filtersOpen}
           onClose={() => setFiltersOpen(false)}
-          onApply={setFilters}
+          onApply={handleApply}
           basePath="/discover/search"
           filters={modalFilters}
           neighborhoods={neighborhoods}

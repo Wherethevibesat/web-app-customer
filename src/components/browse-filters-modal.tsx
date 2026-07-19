@@ -11,6 +11,7 @@ import {
 } from "@/lib/filter-url";
 import { toggleDayOfWeek, WEEKDAYS } from "@/lib/weekdays";
 import { cn } from "@/lib/utils";
+import { buttonClass } from "@/lib/button";
 
 type BrowseFiltersModalProps = {
   open: boolean;
@@ -42,8 +43,8 @@ function FilterChip({
       className={cn(
         "rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors",
         active
-          ? "border-white/20 bg-gradient-to-br from-white to-zinc-300 text-black"
-          : "border-wtva-dark-300 bg-wtva-dark-300 text-foreground hover:border-foreground/40",
+          ? "border-transparent bg-accent-gradient text-white shadow-accent"
+          : "border-wtva-dark-300 bg-wtva-dark-300 text-foreground hover:border-accent hover:text-accent",
       )}
     >
       {label}
@@ -259,7 +260,7 @@ export function BrowseFiltersModal({
           <button
             type="button"
             onClick={applyDraft}
-            className="w-full rounded-xl bg-foreground py-3.5 text-sm font-bold text-background hover:opacity-90"
+            className={buttonClass("primary", "lg", "w-full py-3.5")}
           >
             Apply filters
           </button>

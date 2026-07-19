@@ -4,6 +4,7 @@ import { PageShell } from "@/components/page-shell";
 import { createClient } from "@/lib/supabase/server";
 import { getLeaderboard, getLeaderboardWindow, getMyRanking } from "@/lib/data/rankings";
 import { pointsToNextTier, RANK_TIERS, tierForPoints } from "@/lib/ranking-rules";
+import { buttonClass } from "@/lib/button";
 
 export default async function RankingPage({
   searchParams,
@@ -67,13 +68,13 @@ export default async function RankingPage({
             <div className="flex rounded-lg border border-wtva-dark-300 p-0.5 text-sm">
               <Link
                 href="/ranking"
-                className={`rounded-md px-3 py-1 font-medium ${!isWeek ? "bg-foreground text-background" : "text-wtva-muted"}`}
+                className={`rounded-md px-3 py-1 font-medium ${!isWeek ? "bg-accent-gradient text-white shadow-accent" : "text-wtva-muted"}`}
               >
                 All-time
               </Link>
               <Link
                 href="/ranking?range=week"
-                className={`rounded-md px-3 py-1 font-medium ${isWeek ? "bg-foreground text-background" : "text-wtva-muted"}`}
+                className={`rounded-md px-3 py-1 font-medium ${isWeek ? "bg-accent-gradient text-white shadow-accent" : "text-wtva-muted"}`}
               >
                 This week
               </Link>
@@ -129,10 +130,7 @@ export default async function RankingPage({
             ))}
           </ul>
           {user && (
-            <Link
-              href="/check-in"
-              className="mt-6 block w-full rounded-lg bg-foreground py-3 text-center text-sm font-semibold text-background"
-            >
+            <Link href="/check-in" className={buttonClass("primary", "lg", "mt-6 w-full")}>
               Check in now
             </Link>
           )}

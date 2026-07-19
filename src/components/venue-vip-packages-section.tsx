@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { VenueVipPackage } from "@/lib/data/events";
 import { formatPrice } from "@/lib/format";
+import { buttonClass } from "@/lib/button";
 
 export function VenueVipPackagesSection({
   packages,
@@ -37,7 +38,7 @@ export function VenueVipPackagesSection({
                   ? `/checkout/${pkg.id}`
                   : `/auth/login?next=${encodeURIComponent(`/checkout/${pkg.id}`)}`
               }
-              className="mt-4 inline-block rounded-lg bg-foreground px-4 py-2.5 text-center text-sm font-semibold text-background"
+              className={buttonClass("primary", "md", "mt-4 w-full")}
             >
               Buy VIP
             </Link>

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { PromoterOfferPublic } from "@/lib/data/promoters";
+import { buttonClass } from "@/lib/button";
 
 function formatPrice(cents: number) {
   return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
@@ -78,7 +79,7 @@ export function PromoterProfileOffers({
                   setDone(false);
                   setMessage(null);
                 }}
-                className="mt-3 rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background"
+                className={buttonClass("primary", "sm", "mt-3")}
               >
                 Request to book
               </button>
@@ -156,14 +157,14 @@ export function PromoterProfileOffers({
                 type="button"
                 disabled={loading}
                 onClick={submitInquiry}
-                className="flex-1 rounded-lg bg-foreground py-2.5 text-sm font-semibold text-background disabled:opacity-50"
+                className={buttonClass("primary", "md", "flex-1")}
               >
                 {loading ? "Sending..." : "Send inquiry"}
               </button>
               <button
                 type="button"
                 onClick={() => setActiveOffer(null)}
-                className="rounded-lg border border-wtva-dark-300 px-4 py-2 text-sm"
+                className={buttonClass("secondary", "sm")}
               >
                 Cancel
               </button>

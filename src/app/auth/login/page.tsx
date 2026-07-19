@@ -6,6 +6,7 @@ import { Suspense, useState } from "react";
 import { AuthCard } from "@/components/auth-card";
 import { BusinessAccountLinks } from "@/components/auth/business-account-links";
 import { createClient } from "@/lib/supabase/client";
+import { buttonClass } from "@/lib/button";
 
 function LoginForm() {
   const router = useRouter();
@@ -60,7 +61,7 @@ function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-foreground py-3 text-sm font-semibold text-background disabled:opacity-50"
+          className={buttonClass("primary", "lg", "w-full")}
         >
           {loading ? "Signing in…" : "Sign in"}
         </button>

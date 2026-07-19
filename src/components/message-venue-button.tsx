@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MessageCircle } from "lucide-react";
+import { buttonClass } from "@/lib/button";
 
 type Props = {
   venueId: string;
@@ -18,7 +19,7 @@ export function MessageVenueButton({ venueId, venueName, signedIn }: Props) {
     return (
       <a
         href={`/auth/login?next=/venues/${venueId}`}
-        className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-wtva-dark-300 px-4 py-2.5 text-sm font-semibold text-foreground hover:border-accent hover:text-accent"
+        className={buttonClass("secondary", "md", "whitespace-nowrap px-4")}
       >
         <MessageCircle className="h-4 w-4" />
         Message
@@ -49,7 +50,7 @@ export function MessageVenueButton({ venueId, venueName, signedIn }: Props) {
       type="button"
       onClick={openThread}
       disabled={loading}
-      className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-wtva-dark-300 px-4 py-2.5 text-sm font-semibold text-foreground hover:border-accent hover:text-accent disabled:opacity-50"
+      className={buttonClass("secondary", "md", "whitespace-nowrap px-4")}
     >
       <MessageCircle className="h-4 w-4" />
       {loading ? "Opening…" : "Message"}

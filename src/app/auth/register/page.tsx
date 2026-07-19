@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AuthCard } from "@/components/auth-card";
 import { BusinessAccountLinks } from "@/components/auth/business-account-links";
 import { createClient } from "@/lib/supabase/client";
+import { buttonClass } from "@/lib/button";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -74,7 +75,7 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-foreground py-3 text-sm font-semibold text-background disabled:opacity-50"
+          className={buttonClass("primary", "lg", "w-full")}
         >
           {loading ? "Creating account…" : "Create customer account"}
         </button>

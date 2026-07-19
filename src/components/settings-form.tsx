@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { buttonClass } from "@/lib/button";
 
 export function SettingsForm({
   initialName,
@@ -60,7 +61,7 @@ export function SettingsForm({
       <button
         type="submit"
         disabled={loading}
-        className="rounded-lg bg-foreground px-6 py-2.5 text-sm font-semibold text-background disabled:opacity-50"
+        className={buttonClass("primary", "md", "px-6")}
       >
         {loading ? "Saving…" : "Save changes"}
       </button>

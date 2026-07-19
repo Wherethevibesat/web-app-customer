@@ -15,6 +15,7 @@ import { BrowseDatePicker } from "@/components/browse-date-picker";
 import { BrowseFiltersModal } from "@/components/browse-filters-modal";
 import { weekdayShortLabel } from "@/lib/weekdays";
 import { cn } from "@/lib/utils";
+import { buttonClass } from "@/lib/button";
 
 type BrowseFiltersBarProps = {
   basePath: string;
@@ -90,10 +91,7 @@ export function BrowseFiltersBar({
               placeholder={searchPlaceholder}
               className="min-w-0 flex-1 rounded-lg border border-wtva-dark-300 bg-wtva-card px-4 py-2.5 text-sm outline-none focus:border-foreground"
             />
-            <button
-              type="submit"
-              className="shrink-0 rounded-lg bg-foreground px-5 py-2.5 text-sm font-semibold text-background"
-            >
+            <button type="submit" className={buttonClass("primary", "md", "shrink-0")}>
               Search
             </button>
             {showDatePicker && <BrowseDatePicker basePath={basePath} filters={filters} />}
@@ -101,15 +99,16 @@ export function BrowseFiltersBar({
               <button
                 type="button"
                 onClick={() => setModalOpen(true)}
-                className={cn(
-                  "relative shrink-0 inline-flex items-center gap-2 rounded-lg border border-wtva-dark-300 bg-wtva-card px-4 py-2.5 text-sm font-semibold hover:border-foreground",
-                  filterCount > 0 && "border-foreground/50",
+                className={buttonClass(
+                  "secondary",
+                  "md",
+                  cn("relative shrink-0", filterCount > 0 && "border-accent text-accent"),
                 )}
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 <span className="hidden sm:inline">Filters</span>
                 {filterCount > 0 && (
-                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-bold text-background">
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
                     {filterCount}
                   </span>
                 )}
@@ -126,15 +125,16 @@ export function BrowseFiltersBar({
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className={cn(
-                "relative shrink-0 inline-flex items-center gap-2 rounded-lg border border-wtva-dark-300 bg-wtva-card px-4 py-2.5 text-sm font-semibold hover:border-foreground",
-                filterCount > 0 && "border-foreground/50",
+              className={buttonClass(
+                "secondary",
+                "md",
+                cn("relative shrink-0", filterCount > 0 && "border-accent text-accent"),
               )}
             >
               <SlidersHorizontal className="h-4 w-4" />
               Filters
               {filterCount > 0 && (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-bold text-background">
+                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
                   {filterCount}
                 </span>
               )}
@@ -224,7 +224,7 @@ function ActivePill({ label, clearHref }: { label: string; clearHref: string }) 
   return (
     <Link
       href={clearHref}
-      className="inline-flex items-center gap-1 rounded-full border border-wtva-dark-300 bg-wtva-dark-300 px-3 py-1 text-xs font-semibold hover:border-foreground/40"
+      className="inline-flex items-center gap-1 rounded-full border border-wtva-dark-300 bg-wtva-dark-300 px-3 py-1 text-xs font-semibold hover:border-accent hover:text-accent"
     >
       {label}
       <span className="text-wtva-muted" aria-hidden>

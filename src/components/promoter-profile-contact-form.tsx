@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { buttonClass } from "@/lib/button";
 
 export function PromoterProfileContactForm({
   promoterId,
@@ -121,7 +122,7 @@ export function PromoterProfileContactForm({
       <button
         type="submit"
         disabled={loading}
-        className="w-full rounded-lg bg-foreground py-3 text-sm font-semibold text-background disabled:opacity-50"
+        className={buttonClass("primary", "lg", "w-full")}
       >
         {loading ? "Sending..." : "Send message"}
       </button>

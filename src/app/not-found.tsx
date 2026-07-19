@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { buttonClass } from "@/lib/button";
 
 export default function NotFound() {
   return (
@@ -9,16 +10,10 @@ export default function NotFound() {
         This page doesn&apos;t exist or may have moved. Head back to discover events and venues.
       </p>
       <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Link
-          href="/"
-          className="rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background"
-        >
+        <Link href="/" className={buttonClass("primary", "lg")}>
           Home
         </Link>
-        <Link
-          href="/events"
-          className="rounded-lg border border-wtva-dark-300 px-6 py-3 text-sm font-semibold"
-        >
+        <Link href="/events" className={buttonClass("secondary", "lg")}>
           Events
         </Link>
       </div>

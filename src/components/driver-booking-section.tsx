@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
+import { buttonClass } from "@/lib/button";
 import {
   Elements,
   PaymentElement,
@@ -76,7 +77,7 @@ function PaidDriverCheckout({
           type="button"
           onClick={startCheckout}
           disabled={loading}
-          className="w-full rounded-lg bg-foreground py-2.5 text-sm font-semibold text-background disabled:opacity-50"
+          className={buttonClass("primary", "md", "w-full")}
         >
           {loading ? "Loading…" : "Continue to payment"}
         </button>
@@ -150,7 +151,7 @@ function PaidDriverCheckoutForm({
       <button
         type="submit"
         disabled={!stripe || loading}
-        className="w-full rounded-lg bg-foreground py-2.5 text-sm font-semibold text-background disabled:opacity-50"
+        className={buttonClass("primary", "md", "w-full")}
       >
         {loading ? "Processing…" : "Pay & request booking"}
       </button>
@@ -302,7 +303,7 @@ export function DriverBookingSection({
             <button
               type="button"
               onClick={() => beginCheckout(pkg)}
-              className="mt-4 rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background"
+              className={buttonClass("primary", "md", "mt-4 w-full")}
             >
               Request booking
             </button>

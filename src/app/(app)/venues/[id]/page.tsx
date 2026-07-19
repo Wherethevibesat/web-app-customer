@@ -22,6 +22,7 @@ import { listPublishedDrivers } from "@/lib/data/drivers";
 import { formatEventDateTime } from "@/lib/format";
 import { openingHoursRows } from "@/lib/types/opening-hours";
 import { venueImage } from "@/lib/placeholder";
+import { buttonClass } from "@/lib/button";
 import { createClient } from "@/lib/supabase/server";
 
 function extractHandle(url: string | null | undefined): string | null {
@@ -356,10 +357,7 @@ export default async function VenueDetailPage({
           </div>
 
           <div className="flex flex-wrap items-center gap-2 xl:shrink-0 xl:flex-nowrap">
-            <Link
-              href={checkInHref}
-              className="inline-flex items-center gap-2 whitespace-nowrap rounded-full bg-accent-gradient px-5 py-2.5 text-sm font-semibold text-white shadow-accent"
-            >
+            <Link href={checkInHref} className={buttonClass("primary", "md", "whitespace-nowrap")}>
               Check in (+25 pts)
             </Link>
             <FavoriteButton venueId={id} initialFavorited={favorited} variant="labeled" />

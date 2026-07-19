@@ -3,6 +3,7 @@ import { Megaphone } from "lucide-react";
 import { PromoterBrowseCard } from "@/components/promoter-browse-card";
 import { listPromotersForBrowse } from "@/lib/data/promoters";
 import { getBusinessPortalUrl } from "@/lib/business-portal-url";
+import { buttonClass } from "@/lib/button";
 
 export default async function PromotersBrowsePage({
   searchParams,
@@ -38,16 +39,10 @@ export default async function PromotersBrowsePage({
           </div>
         </div>
         <div className="mt-4 flex flex-wrap gap-3 md:mt-0 md:shrink-0">
-          <a
-            href={loginUrl}
-            className="inline-flex justify-center rounded-lg border border-wtva-dark-300 px-4 py-2.5 text-sm font-semibold hover:border-foreground"
-          >
+          <a href={loginUrl} className={buttonClass("secondary", "md")}>
             Promoter sign in
           </a>
-          <a
-            href={registerUrl}
-            className="inline-flex justify-center rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background"
-          >
+          <a href={registerUrl} className={buttonClass("primary", "md")}>
             Become a promoter
           </a>
         </div>
@@ -60,10 +55,7 @@ export default async function PromotersBrowsePage({
           placeholder="Search promoter or venue…"
           className="flex-1 rounded-lg border border-wtva-dark-300 bg-wtva-card px-4 py-3 text-sm"
         />
-        <button
-          type="submit"
-          className="rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background"
-        >
+        <button type="submit" className={buttonClass("primary", "lg")}>
           Search
         </button>
       </form>

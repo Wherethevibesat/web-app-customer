@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { MessageCircle, Sparkles, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { buttonClass } from "@/lib/button";
 
 type ConciergeResponse = {
   reply: string;
@@ -220,7 +221,7 @@ export function ConciergeWidget({ floating = true }: { floating?: boolean }) {
         <button
           type="submit"
           disabled={busy || !query.trim()}
-          className="inline-flex items-center justify-center rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background transition-colors disabled:opacity-50"
+          className={buttonClass("primary", "sm")}
         >
           {busy ? "..." : "Ask"}
         </button>
@@ -256,7 +257,7 @@ export function ConciergeWidget({ floating = true }: { floating?: boolean }) {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="fixed bottom-24 right-4 z-40 inline-flex items-center gap-2 rounded-full bg-foreground px-4 py-3 text-sm font-semibold text-background shadow-lg md:bottom-6"
+          className={buttonClass("primary", "lg", "fixed bottom-24 right-4 z-40 md:bottom-6")}
         >
           <Sparkles className="h-4 w-4" />
           Ask Concierge

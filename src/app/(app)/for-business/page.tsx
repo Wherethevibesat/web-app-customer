@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { Building2, Car, Megaphone } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { getBusinessPortalUrl } from "@/lib/business-portal-url";
+import { buttonClass } from "@/lib/button";
 
 const BUSINESS_TYPES = [
   {
@@ -64,10 +65,7 @@ export default async function ForBusinessPage() {
             <p className="mt-2 flex-1 text-sm leading-relaxed text-wtva-muted">{description}</p>
             {available ? (
               <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-                <a
-                  href={loginUrl}
-                  className="inline-flex justify-center rounded-lg border border-wtva-dark-300 px-4 py-2.5 text-sm font-semibold hover:border-foreground"
-                >
+                <a href={loginUrl} className={buttonClass("secondary", "md")}>
                   Sign in
                 </a>
                 <a
@@ -78,7 +76,7 @@ export default async function ForBusinessPage() {
                         ? promoterRegisterUrl
                         : registerUrl
                   }
-                  className="inline-flex justify-center rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background"
+                  className={buttonClass("primary", "md")}
                 >
                   Create account
                 </a>

@@ -1,5 +1,6 @@
 import { openingHoursRows } from "@/lib/types/opening-hours";
 import type { Venue } from "@/lib/data/venues";
+import { buttonClass } from "@/lib/button";
 
 const SOCIAL_LINKS = [
   { key: "website_url" as const, label: "Website" },
@@ -48,7 +49,7 @@ export function VenueDetailsExtra({ venue }: { venue: Venue }) {
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="rounded-lg border border-wtva-dark-300 px-4 py-2 text-sm font-medium hover:border-foreground"
+                    className={buttonClass("secondary", "sm")}
                   >
                     {item.label}
                   </a>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Share2 } from "lucide-react";
+import { buttonClass } from "@/lib/button";
 
 export function VenueShareButton({
   venueName,
@@ -40,7 +41,7 @@ export function VenueShareButton({
     <button
       type="button"
       onClick={share}
-      className="inline-flex items-center gap-2 whitespace-nowrap rounded-full border border-wtva-dark-300 px-4 py-2.5 text-sm font-semibold text-foreground hover:border-accent hover:text-accent"
+      className={buttonClass("secondary", "md", "whitespace-nowrap px-4")}
     >
       <Share2 className="h-4 w-4" />
       {copied ? "Link copied" : "Share"}

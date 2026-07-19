@@ -9,6 +9,9 @@ import { browseItemKey, listBrowseFeed, listHomepageFeaturedItems } from "@/lib/
 import { getEventTypes } from "@/lib/data/events";
 import { listNeighborhoodOptions } from "@/lib/data/neighborhoods";
 import { listVenues } from "@/lib/data/venues";
+import { buttonClass } from "@/lib/button";
+import { HeroCitySelect } from "@/components/hero-city-select";
+import { DEFAULT_CITY } from "@/lib/cities";
 
 const HERO_VIDEO_SRC =
   process.env.NEXT_PUBLIC_HERO_VIDEO_URL?.trim() || "/videos/hero.mp4";
@@ -33,27 +36,18 @@ export default async function HomePage() {
       <section className="relative min-h-[520px] overflow-hidden border-b border-wtva-dark-300">
         <HeroVideoBackground src={HERO_VIDEO_SRC} poster={HERO_VIDEO_POSTER} />
         <div className="relative mx-auto max-w-7xl px-4 py-16 lg:px-8 lg:py-24">
-          <p className="text-sm font-semibold uppercase tracking-widest text-white/75">
-            Houston nightlife &amp; events
-          </p>
-          <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-tight tracking-tight text-white md:text-5xl lg:text-6xl">
-            Discover where Houston is going{" "}
+          <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-white md:text-5xl lg:text-6xl">
+            Discover where <HeroCitySelect current={DEFAULT_CITY} /> is going{" "}
             <span className="text-accent-gradient italic">tonight.</span>
           </h1>
           <p className="mt-4 max-w-xl text-lg text-white/85">
             The best events, clubs, lounges and experiences — all in one place.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              href="/discover"
-              className="inline-flex items-center gap-2 rounded-full bg-accent-gradient px-6 py-3 text-sm font-semibold text-white shadow-accent"
-            >
+            <Link href="/discover" className={buttonClass("primary", "lg")}>
               Open discover <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link
-              href="/discover/events"
-              className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm hover:bg-white/20"
-            >
+            <Link href="/discover/events" className={buttonClass("onDark", "lg")}>
               Browse events
             </Link>
           </div>

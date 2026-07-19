@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { buttonClass } from "@/lib/button";
 
 export function RewardRedeemButton({
   rewardId,
@@ -56,7 +57,7 @@ export function RewardRedeemButton({
         type="button"
         onClick={redeem}
         disabled={loading || !affordable || outOfStock}
-        className="w-full rounded-lg bg-accent-gradient py-2.5 text-sm font-semibold text-white shadow-accent disabled:cursor-not-allowed disabled:opacity-40"
+        className={buttonClass("primary", "md", "w-full")}
       >
         {outOfStock
           ? "Out of stock"

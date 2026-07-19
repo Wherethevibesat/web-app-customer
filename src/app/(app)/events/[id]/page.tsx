@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { MapPin, Repeat } from "lucide-react";
 import { getEvent, listEventVipPackages } from "@/lib/data/events";
 import { eventImage } from "@/lib/placeholder";
+import { buttonClass } from "@/lib/button";
 import { formatRecurringSchedule, getEventSeries } from "@/lib/data/event-series";
 import { listOffersForEvent } from "@/lib/data/promoters";
 import { PromoterOffersSection } from "@/components/promoter-offers-section";
@@ -124,16 +125,13 @@ export default async function EventDetailPage({
           {event.venue_id && (
             <Link
               href={user ? `/check-in?venue=${event.venue_id}` : `/auth/login?next=/events/${id}`}
-              className="rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background"
+              className={buttonClass("primary", "lg")}
             >
               Check in at venue
             </Link>
           )}
           {event.venue && (
-            <Link
-              href={`/venues/${event.venue.id}`}
-              className="rounded-lg border border-wtva-dark-300 px-6 py-3 text-sm font-semibold hover:border-foreground"
-            >
+            <Link href={`/venues/${event.venue.id}`} className={buttonClass("secondary", "lg")}>
               View venue
             </Link>
           )}
@@ -171,7 +169,7 @@ export default async function EventDetailPage({
                   )}
                   <Link
                     href={user ? `/checkout/${pkg.id}` : `/auth/login?next=/checkout/${pkg.id}`}
-                    className="mt-4 inline-block rounded-lg bg-foreground px-4 py-2.5 text-center text-sm font-semibold text-background"
+                    className={buttonClass("primary", "md", "mt-4 w-full")}
                   >
                     Buy VIP
                   </Link>

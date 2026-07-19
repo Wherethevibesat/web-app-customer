@@ -6,6 +6,7 @@ import { VipCheckoutForm } from "@/components/vip-checkout-form";
 import { createClient } from "@/lib/supabase/server";
 import { getPublishableKey, getVipPackage } from "@/lib/stripe/server";
 import { formatPrice } from "@/lib/format";
+import { buttonClass } from "@/lib/button";
 
 export default async function CheckoutPage({
   params,
@@ -48,10 +49,7 @@ export default async function CheckoutPage({
             VIP package <strong>{pkg.package_name}</strong> confirmed.
           </p>
           {eventRow && (
-            <Link
-              href={`/events/${eventRow.id}`}
-              className="mt-6 inline-block rounded-lg bg-foreground px-5 py-2.5 text-sm font-semibold text-background"
-            >
+            <Link href={`/events/${eventRow.id}`} className={buttonClass("primary", "md", "mt-6")}>
               Back to event
             </Link>
           )}
