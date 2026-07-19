@@ -18,10 +18,10 @@ export function MessageVenueButton({ venueId, venueName, signedIn }: Props) {
     return (
       <a
         href={`/auth/login?next=/venues/${venueId}`}
-        className="inline-flex items-center gap-2 rounded-lg border border-wtva-dark-300 px-6 py-3 text-sm font-semibold hover:border-foreground"
+        className="inline-flex items-center gap-2 rounded-full border border-wtva-dark-300 px-6 py-3 text-sm font-semibold text-foreground hover:border-accent hover:text-accent"
       >
         <MessageCircle className="h-4 w-4" />
-        Message venue
+        Message
       </a>
     );
   }
@@ -49,10 +49,10 @@ export function MessageVenueButton({ venueId, venueName, signedIn }: Props) {
       type="button"
       onClick={openThread}
       disabled={loading}
-      className="inline-flex items-center gap-2 rounded-lg border border-wtva-dark-300 px-6 py-3 text-sm font-semibold hover:border-foreground disabled:opacity-50"
+      className="inline-flex items-center gap-2 rounded-full border border-wtva-dark-300 px-6 py-3 text-sm font-semibold text-foreground hover:border-accent hover:text-accent disabled:opacity-50"
     >
       <MessageCircle className="h-4 w-4" />
-      {loading ? "Opening…" : "Message venue"}
+      {loading ? "Opening…" : "Message"}
     </button>
   );
 }

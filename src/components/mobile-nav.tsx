@@ -17,7 +17,7 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-wtva-dark-300 bg-wtva-dark-400/95 backdrop-blur md:hidden">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-wtva-dark-300 bg-white/95 backdrop-blur md:hidden">
       <div className="mx-auto flex max-w-lg justify-around px-1 py-2">
         {links.map(({ href, label, icon: Icon }) => {
           const active =
@@ -29,8 +29,8 @@ export function MobileNav() {
               key={href}
               href={href}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-medium",
-                active ? "text-foreground" : "text-wtva-muted",
+                "flex flex-col items-center gap-0.5 px-2 py-1 text-[10px] font-semibold",
+                active ? "text-accent" : "text-wtva-muted",
               )}
             >
               <Icon className="h-5 w-5" />

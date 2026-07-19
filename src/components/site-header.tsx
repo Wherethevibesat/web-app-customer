@@ -57,13 +57,13 @@ export function SiteHeader({
     <>
       <Link
         href="/check-in"
-        className="hidden rounded-lg border border-wtva-dark-300 px-3 py-2 text-sm font-medium hover:border-foreground sm:inline-flex"
+        className="hidden rounded-full border border-wtva-dark-300 px-4 py-2 text-sm font-semibold text-wtva-muted hover:border-accent hover:text-accent sm:inline-flex"
       >
         Check in
       </Link>
       <Link
         href="/profile"
-        className="inline-flex items-center gap-2 rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background"
+        className="inline-flex items-center gap-2 rounded-full bg-accent-gradient px-4 py-2 text-sm font-semibold text-white shadow-accent"
       >
         <User className="h-4 w-4" />
         <span className="max-w-[120px] truncate">{userName}</span>
@@ -73,24 +73,31 @@ export function SiteHeader({
     <>
       <Link
         href="/auth/login"
-        className="rounded-lg border border-wtva-dark-300 px-3 py-2 text-sm font-medium hover:border-foreground"
+        className="rounded-full border border-wtva-dark-300 px-5 py-2 text-sm font-semibold text-foreground hover:border-accent hover:text-accent"
       >
-        Sign in
+        Log in
       </Link>
       <Link
         href="/auth/register"
-        className="rounded-lg bg-foreground px-4 py-2 text-sm font-semibold text-background"
+        className="rounded-full bg-accent-gradient px-5 py-2 text-sm font-semibold text-white shadow-accent"
       >
-        Join free
+        Sign up
       </Link>
     </>
   );
 
   return (
-    <header className="sticky top-0 z-50 border-b border-wtva-dark-300 bg-background/90 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-wtva-dark-300 bg-white/85 backdrop-blur-md">
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-4 lg:px-8">
-        <Link href="/" className="shrink-0 text-lg font-bold tracking-tight lg:text-xl">
-          Where The Vibes At
+        <Link href="/" className="flex shrink-0 items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent-gradient text-sm font-black text-white shadow-accent">
+            W
+          </span>
+          <span className="text-sm font-bold leading-tight tracking-tight lg:text-base">
+            Where The
+            <br />
+            Vibes At
+          </span>
         </Link>
 
         <form onSubmit={onSearch} className="hidden flex-1 max-w-xl md:flex">
@@ -101,7 +108,7 @@ export function SiteHeader({
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Search events, venues, neighborhoods…"
-              className="w-full rounded-full border border-wtva-dark-300 bg-wtva-card py-2.5 pl-10 pr-4 text-sm outline-none focus:border-foreground"
+              className="w-full rounded-full border border-wtva-dark-300 bg-wtva-dark-400 py-2.5 pl-10 pr-4 text-sm outline-none focus:border-accent focus:bg-white"
             />
           </div>
         </form>
@@ -112,9 +119,9 @@ export function SiteHeader({
               key={href}
               href={href}
               className={cn(
-                "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
                 isActive(pathname, href)
-                  ? "bg-foreground text-background"
+                  ? "text-accent"
                   : "text-wtva-muted hover:text-foreground",
               )}
             >
@@ -153,8 +160,8 @@ export function SiteHeader({
                 href={href}
                 onClick={() => setMenuOpen(false)}
                 className={cn(
-                  "rounded-lg px-3 py-2.5 text-sm font-medium",
-                  isActive(pathname, href) ? "bg-foreground text-background" : "text-wtva-muted",
+                  "rounded-lg px-3 py-2.5 text-sm font-semibold",
+                  isActive(pathname, href) ? "text-accent" : "text-wtva-muted",
                 )}
               >
                 {label}
@@ -182,9 +189,9 @@ export function SiteHeader({
                   <Link
                     href="/auth/register"
                     onClick={() => setMenuOpen(false)}
-                    className="rounded-lg bg-foreground px-3 py-2.5 text-center text-sm font-semibold text-background"
+                    className="rounded-lg bg-accent-gradient px-3 py-2.5 text-center text-sm font-semibold text-white shadow-accent"
                   >
-                    Join free
+                    Sign up
                   </Link>
                 </>
               )}

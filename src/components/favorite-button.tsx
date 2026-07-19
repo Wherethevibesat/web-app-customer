@@ -40,13 +40,13 @@ export function FavoriteButton({
       onClick={toggle}
       className={
         variant === "labeled"
-          ? "inline-flex items-center gap-2 rounded-lg border border-wtva-dark-300 px-6 py-3 text-sm font-semibold hover:border-foreground disabled:opacity-50"
-          : "rounded-lg border border-wtva-dark-300 p-2 disabled:opacity-50"
+          ? "inline-flex items-center gap-2 rounded-full border border-wtva-dark-300 px-6 py-3 text-sm font-semibold text-foreground hover:border-accent hover:text-accent disabled:opacity-50"
+          : "rounded-full border border-wtva-dark-300 p-2 disabled:opacity-50"
       }
       aria-label={variant === "labeled" ? undefined : "Favorite"}
     >
       <Heart
-        className={`h-5 w-5 ${favorited ? "fill-foreground text-foreground" : "text-wtva-muted"}`}
+        className={`h-5 w-5 ${favorited ? "fill-accent text-accent" : "text-wtva-muted"}`}
       />
       {variant === "labeled" ? (favorited ? "Saved" : "Save venue") : null}
     </button>

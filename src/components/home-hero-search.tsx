@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { SlidersHorizontal } from "lucide-react";
+import { Search, SlidersHorizontal } from "lucide-react";
 import { BrowseFiltersModal } from "@/components/browse-filters-modal";
 import { eventTypeToSlug } from "@/lib/event-types";
 import { activeFilterCount, type BrowseFilters } from "@/lib/filter-url";
@@ -43,27 +43,30 @@ export function HomeHeroSearch({
           <input type="hidden" name="day" value={filters.days.join(",")} />
         ) : null}
 
-        <div className="rounded-xl border border-wtva-dark-300/80 bg-black/40 p-2 shadow-lg backdrop-blur-md">
+        <div className="rounded-2xl border border-white/20 bg-white/95 p-2 shadow-card backdrop-blur-md">
           <div className="flex flex-col gap-2 sm:flex-row">
-            <input
-              name="q"
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search events, venues, or neighborhoods..."
-              className="min-w-0 flex-1 bg-transparent px-4 py-3 text-sm outline-none placeholder:text-wtva-subtle"
-            />
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-wtva-subtle" />
+              <input
+                name="q"
+                type="search"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search events, DJs, venues, or experiences…"
+                className="w-full bg-transparent py-3 pl-11 pr-4 text-sm text-foreground outline-none placeholder:text-wtva-subtle"
+              />
+            </div>
 
             <div className="flex gap-2 sm:shrink-0">
               <button
                 type="button"
                 onClick={() => setFiltersOpen(true)}
-                className="relative inline-flex items-center justify-center gap-2 rounded-lg border border-wtva-dark-300/80 bg-black/20 px-4 py-3 text-sm font-semibold backdrop-blur-sm hover:border-foreground"
+                className="relative inline-flex items-center justify-center gap-2 rounded-xl border border-wtva-dark-300 px-4 py-3 text-sm font-semibold text-foreground hover:border-accent hover:text-accent"
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 <span className="hidden sm:inline">Filters</span>
                 {filterCount > 0 && (
-                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-foreground px-1 text-[10px] font-bold text-background">
+                  <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
                     {filterCount}
                   </span>
                 )}
@@ -71,9 +74,10 @@ export function HomeHeroSearch({
 
               <button
                 type="submit"
-                className="shrink-0 rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background"
+                className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-accent-gradient px-6 py-3 text-sm font-semibold text-white shadow-accent"
               >
-                Search
+                <Search className="h-4 w-4" />
+                <span>Search</span>
               </button>
             </div>
           </div>

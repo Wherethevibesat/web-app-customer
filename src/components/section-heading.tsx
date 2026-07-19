@@ -20,7 +20,7 @@ export function SectionHeading({
       {href && (
         <Link
           href={href}
-          className="text-sm font-semibold text-wtva-muted hover:text-foreground"
+          className="text-sm font-semibold text-accent hover:opacity-80"
         >
           {linkLabel} →
         </Link>

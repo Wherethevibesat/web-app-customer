@@ -32,26 +32,26 @@ export default async function HomePage() {
       <section className="relative min-h-[520px] overflow-hidden border-b border-wtva-dark-300">
         <HeroVideoBackground src={HERO_VIDEO_SRC} poster={HERO_VIDEO_POSTER} />
         <div className="relative mx-auto max-w-7xl px-4 py-16 lg:px-8 lg:py-24">
-          <p className="text-sm font-semibold uppercase tracking-widest text-wtva-muted">
-            Houston nightlife & events
+          <p className="text-sm font-semibold uppercase tracking-widest text-white/75">
+            Houston nightlife &amp; events
           </p>
-          <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-tight tracking-tight md:text-5xl lg:text-6xl">
-            Find where the vibes are tonight
+          <h1 className="mt-4 max-w-3xl text-4xl font-bold leading-tight tracking-tight text-white md:text-5xl lg:text-6xl">
+            Discover where Houston is going{" "}
+            <span className="text-accent-gradient italic">tonight.</span>
           </h1>
-          <p className="mt-4 max-w-xl text-lg text-wtva-muted">
-            Browse parties, clubs, and experiences. Check in at venues, climb the
-            leaderboard, and never miss what&apos;s happening near you.
+          <p className="mt-4 max-w-xl text-lg text-white/85">
+            The best events, clubs, lounges and experiences — all in one place.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/discover"
-              className="inline-flex items-center gap-2 rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background"
+              className="inline-flex items-center gap-2 rounded-full bg-accent-gradient px-6 py-3 text-sm font-semibold text-white shadow-accent"
             >
               Open discover <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/discover/events"
-              className="inline-flex items-center gap-2 rounded-lg border border-wtva-dark-300 bg-black/20 px-6 py-3 text-sm font-semibold backdrop-blur-sm hover:border-foreground"
+              className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm hover:bg-white/20"
             >
               Browse events
             </Link>
@@ -115,24 +115,28 @@ export default async function HomePage() {
           )}
         </section>
 
-        <section className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-8 md:p-12 text-center">
-          <h2 className="text-2xl font-bold">Earn points every time you go out</h2>
-          <p className="mx-auto mt-3 max-w-md text-wtva-muted">
-            Check in at venues, climb from Vibee to Influencer, and compete on the city leaderboard.
-          </p>
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link
-              href="/auth/register"
-              className="rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background"
-            >
-              Join free
-            </Link>
-            <Link
-              href="/ranking"
-              className="rounded-lg border border-wtva-dark-300 px-6 py-3 text-sm font-semibold"
-            >
-              View rankings
-            </Link>
+        <section className="relative overflow-hidden rounded-3xl bg-accent-gradient p-8 text-center text-white shadow-accent md:p-12">
+          <div className="pointer-events-none absolute -right-16 -top-16 h-52 w-52 rounded-full bg-white/15 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-20 -left-10 h-52 w-52 rounded-full bg-white/10 blur-2xl" />
+          <div className="relative">
+            <h2 className="text-2xl font-bold md:text-3xl">Earn rewards for living the vibe</h2>
+            <p className="mx-auto mt-3 max-w-md text-white/85">
+              Check in at venues, climb from Vibee to Influencer, and compete on the city leaderboard.
+            </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              <Link
+                href="/auth/register"
+                className="rounded-full bg-white px-6 py-3 text-sm font-semibold text-accent shadow-sm hover:bg-white/90"
+              >
+                Join now
+              </Link>
+              <Link
+                href="/ranking"
+                className="rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10"
+              >
+                View leaderboard
+              </Link>
+            </div>
           </div>
         </section>
       </div>

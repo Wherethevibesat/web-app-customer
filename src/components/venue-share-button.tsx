@@ -40,7 +40,7 @@ export function VenueShareButton({
     <button
       type="button"
       onClick={share}
-      className="inline-flex items-center gap-2 rounded-lg border border-wtva-dark-300 px-6 py-3 text-sm font-semibold hover:border-foreground"
+      className="inline-flex items-center gap-2 rounded-full border border-wtva-dark-300 px-6 py-3 text-sm font-semibold text-foreground hover:border-accent hover:text-accent"
     >
       <Share2 className="h-4 w-4" />
       {copied ? "Link copied" : "Share"}

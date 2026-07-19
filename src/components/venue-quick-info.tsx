@@ -24,13 +24,13 @@ export function VenueQuickInfo({ venue }: { venue: Venue }) {
       {hasBadges && (
         <div className="flex flex-wrap gap-2">
           {venue.verified && (
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
               <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
               Verified venue
             </span>
           )}
           {venue.is_open === true && (
-            <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-200">
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
               Open now
             </span>
           )}
@@ -40,13 +40,13 @@ export function VenueQuickInfo({ venue }: { venue: Venue }) {
             </span>
           )}
           {venue.featured && (
-            <span className="rounded-full bg-foreground px-3 py-1 text-xs font-semibold text-background">
+            <span className="rounded-full bg-accent-gradient px-3 py-1 text-xs font-semibold text-white shadow-accent">
               Featured
             </span>
           )}
           {venue.rating != null && venue.rating > 0 && (
             <span className="inline-flex items-center gap-1 rounded-full border border-wtva-dark-300 px-3 py-1 text-xs font-medium">
-              <Star className="h-3.5 w-3.5 fill-foreground text-foreground" aria-hidden />
+              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden />
               {venue.rating.toFixed(1)}
             </span>
           )}

@@ -8,7 +8,7 @@ export function EventCard({ event, large }: { event: Event; large?: boolean }) {
   return (
     <Link
       href={`/events/${event.id}`}
-      className={`group block overflow-hidden rounded-xl border border-wtva-dark-300 bg-wtva-card transition-all hover:border-wtva-muted hover:shadow-lg ${
+      className={`group block overflow-hidden rounded-2xl border border-wtva-dark-300 bg-wtva-card shadow-card transition-all hover:-translate-y-0.5 hover:shadow-card-hover ${
         large ? "flex flex-row" : ""
       }`}
     >
@@ -31,11 +31,11 @@ export function EventCard({ event, large }: { event: Event; large?: boolean }) {
           </div>
         )}
         {event.featured && (
-          <span className="absolute left-3 top-3 rounded bg-foreground px-2 py-0.5 text-xs font-bold text-background">
+          <span className="absolute left-3 top-3 rounded-full bg-accent-gradient px-2.5 py-0.5 text-xs font-bold text-white shadow-accent">
             Featured
           </span>
         )}
-        <span className="absolute bottom-3 left-3 rounded bg-black/70 px-2 py-1 text-xs font-medium backdrop-blur">
+        <span className="absolute bottom-3 left-3 rounded-full bg-black/70 px-2.5 py-1 text-xs font-semibold text-white backdrop-blur">
           {event.event_type}
         </span>
       </div>

@@ -68,12 +68,12 @@ export default async function VenueDetailPage({
     supabase,
   ] = await Promise.all([
     listBrowseFeed({ venueId: id, limit: 12 }).catch(() => []),
-    listPastEventsByVenue(id),
-    listPromotersForVenue(id),
-    listOffersForVenue(id),
-    listVenueVipPackages(id),
-    listRelatedVenues(venue),
-    listPublishedDrivers({ city: "Houston" }),
+    listPastEventsByVenue(id).catch(() => []),
+    listPromotersForVenue(id).catch(() => []),
+    listOffersForVenue(id).catch(() => []),
+    listVenueVipPackages(id).catch(() => []),
+    listRelatedVenues(venue).catch(() => []),
+    listPublishedDrivers({ city: "Houston" }).catch(() => []),
     createClient(),
   ]);
 
@@ -95,47 +95,44 @@ export default async function VenueDetailPage({
 
   return (
     <article>
-      <div className="relative aspect-[21/9] max-h-[400px] w-full bg-wtva-dark-400">
+      <div className="relative aspect-[21/9] max-h-[440px] w-full bg-wtva-dark-400">
         {venue.image_url ? (
           <Image src={venue.image_url} alt="" fill className="object-cover" unoptimized priority />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-t from-background to-transparent" />
-      </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-black/20" />
 
-      <div className="mx-auto max-w-4xl px-4 py-10 lg:px-8">
-        <Link href="/venues" className="text-sm text-wtva-muted hover:text-foreground">
-          ← All venues
-        </Link>
+        <div className="absolute inset-x-0 top-0 mx-auto flex max-w-5xl px-4 pt-6 lg:px-8">
+          <Link
+            href="/venues"
+            className="inline-flex items-center gap-1 rounded-full bg-black/30 px-3 py-1.5 text-sm font-medium text-white backdrop-blur hover:bg-black/50"
+          >
+            ← All venues
+          </Link>
+        </div>
 
-        <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-medium text-wtva-muted">{venue.venue_type}</p>
-            <h1 className="mt-1 text-3xl font-bold md:text-4xl">{venue.name}</h1>
-            {venue.neighborhood && (
-              <p className="mt-2 text-wtva-muted">{venue.neighborhood}</p>
+        <div className="absolute inset-x-0 bottom-0 mx-auto max-w-5xl px-4 pb-6 lg:px-8">
+          {venue.venue_type && (
+            <span className="inline-flex rounded-full bg-accent-gradient px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow-accent">
+              {venue.venue_type}
+            </span>
+          )}
+          <h1 className="mt-3 text-3xl font-bold text-white drop-shadow md:text-5xl">
+            {venue.name}
+          </h1>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm font-medium text-white/90">
+            {venue.neighborhood && <span>{venue.neighborhood}</span>}
+            {venue.rating != null && (
+              <span className="text-amber-300">★ {venue.rating}</span>
             )}
           </div>
         </div>
+      </div>
 
-        <VenueQuickInfo venue={venue} />
-
-        <section className="mt-8">
-          <h2 className="text-lg font-semibold">About</h2>
-          {venue.description ? (
-            <p className="mt-3 text-wtva-muted leading-relaxed">{venue.description}</p>
-          ) : (
-            <p className="mt-3 text-sm text-wtva-muted">
-              Venue details coming soon. Follow for updates or message the venue owner.
-            </p>
-          )}
-        </section>
-
-        <VenueDetailsExtra venue={venue} />
-
-        <div className="mt-8 flex flex-wrap gap-3">
+      <div className="mx-auto max-w-5xl px-4 lg:px-8">
+        <div className="-mt-6 flex flex-wrap items-center gap-3 rounded-2xl border border-wtva-dark-300 bg-white p-3 shadow-card">
           <Link
             href={user ? `/check-in?venue=${id}` : `/auth/login?next=${encodeURIComponent(venuePath)}`}
-            className="rounded-lg bg-foreground px-6 py-3 text-sm font-semibold text-background"
+            className="inline-flex items-center gap-2 rounded-full bg-accent-gradient px-6 py-3 text-sm font-semibold text-white shadow-accent"
           >
             Check in (+25 pts)
           </Link>
@@ -147,6 +144,23 @@ export default async function VenueDetailPage({
           <MessageVenueButton venueId={id} venueName={venue.name} signedIn={!!user} />
           <VenueShareButton venueName={venue.name} venuePath={venuePath} />
         </div>
+      </div>
+
+      <div className="mx-auto max-w-5xl px-4 py-10 lg:px-8">
+        <VenueQuickInfo venue={venue} />
+
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold">About</h2>
+          {venue.description ? (
+            <p className="mt-3 leading-relaxed text-wtva-muted">{venue.description}</p>
+          ) : (
+            <p className="mt-3 text-sm text-wtva-muted">
+              Venue details coming soon. Follow for updates or message the venue owner.
+            </p>
+          )}
+        </section>
+
+        <VenueDetailsExtra venue={venue} />
 
         {promoters.length > 0 && (
           <section className="mt-12">
