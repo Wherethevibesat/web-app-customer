@@ -13,7 +13,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               width={1024}
               height={493}
               priority
-              className="h-9 w-auto mix-blend-multiply lg:h-10"
+              className="h-14 w-auto mix-blend-multiply lg:h-16"
             />
           </Link>
           <Link href="/events" className="text-sm text-wtva-muted hover:text-foreground">
