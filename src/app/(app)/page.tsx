@@ -51,7 +51,7 @@ export default async function HomePage() {
     <>
       <section className="relative min-h-[520px] overflow-hidden border-b border-wtva-dark-300">
         <HeroVideoBackground src={HERO_VIDEO_SRC} poster={HERO_VIDEO_POSTER} />
-        <div className="relative mx-auto max-w-7xl px-4 py-16 lg:px-8 lg:py-24">
+        <div className="relative mx-auto max-w-7xl px-4 py-16 pb-28 md:pb-16 lg:px-8 lg:py-24">
           <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-white md:text-5xl lg:text-6xl">
             Discover where <HeroCitySelect current={DEFAULT_CITY} /> is going{" "}
             <span className="text-accent-gradient italic">tonight.</span>

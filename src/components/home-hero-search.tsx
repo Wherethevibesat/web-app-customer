@@ -104,17 +104,21 @@ export function HomeHeroSearch({
         </div>
       </form>
 
-      <div className="mt-4 flex max-w-2xl flex-wrap items-center gap-2">
-        <span className="text-sm font-medium text-white/90">Popular searches:</span>
-        {POPULAR_SEARCHES.map((term) => (
-          <Link
-            key={term}
-            href={buildBrowseUrl("/discover/search", { q: term })}
-            className="rounded-full border border-white/40 bg-accent-gradient px-3.5 py-1.5 text-xs font-semibold text-white shadow-accent transition-opacity hover:opacity-90"
-          >
-            {term}
-          </Link>
-        ))}
+      <div className="mt-4 max-w-2xl pb-2 md:pb-0">
+        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-white/75">
+          Popular searches
+        </p>
+        <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {POPULAR_SEARCHES.map((term) => (
+            <Link
+              key={term}
+              href={buildBrowseUrl("/discover/search", { q: term })}
+              className="shrink-0 rounded-full border border-white/70 bg-white/90 px-3.5 py-1.5 text-xs font-semibold text-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-white"
+            >
+              {term}
+            </Link>
+          ))}
+        </div>
       </div>
 
       {filtersOpen && (
