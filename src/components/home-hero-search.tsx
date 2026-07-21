@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Search, SlidersHorizontal } from "lucide-react";
@@ -7,6 +8,15 @@ import { BrowseFiltersModal } from "@/components/browse-filters-modal";
 import { eventTypeToSlug } from "@/lib/event-types";
 import { activeFilterCount, buildBrowseUrl, type BrowseFilters } from "@/lib/filter-url";
 import { buttonClass } from "@/lib/button";
+
+const POPULAR_SEARCHES = [
+  "Rooftop",
+  "Happy Hour",
+  "Afrobeats",
+  "R&B",
+  "Brunch",
+  "After Hours",
+] as const;
 
 type HomeHeroSearchProps = {
   neighborhoods: { name: string; slug: string }[];
@@ -93,6 +103,19 @@ export function HomeHeroSearch({
           </div>
         </div>
       </form>
+
+      <div className="mt-4 flex max-w-2xl flex-wrap items-center gap-2">
+        <span className="text-sm font-medium text-white/90">Popular searches:</span>
+        {POPULAR_SEARCHES.map((term) => (
+          <Link
+            key={term}
+            href={buildBrowseUrl("/discover/search", { q: term })}
+            className="rounded-full border border-white/40 bg-accent-gradient px-3.5 py-1.5 text-xs font-semibold text-white shadow-accent transition-opacity hover:opacity-90"
+          >
+            {term}
+          </Link>
+        ))}
+      </div>
 
       {filtersOpen && (
         <BrowseFiltersModal

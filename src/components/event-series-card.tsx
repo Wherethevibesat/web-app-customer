@@ -36,14 +36,10 @@ export function EventSeriesCard({
           unoptimized
         />
         {series.featured && (
-          <span className="absolute left-3 top-3 rounded bg-foreground px-2 py-0.5 text-xs font-bold text-background">
+          <span className="absolute left-3 top-3 rounded-full bg-accent-gradient px-2.5 py-0.5 text-xs font-bold text-white shadow-accent">
             Featured
           </span>
         )}
-        <span className="absolute bottom-3 left-3 flex items-center gap-1 rounded bg-black/70 px-2 py-1 text-xs font-medium backdrop-blur">
-          <Repeat className="h-3 w-3" />
-          {series.event_type}
-        </span>
       </div>
       <div className={`min-w-0 p-4 ${large ? "flex flex-1 flex-col justify-center sm:p-5" : "p-5"}`}>
         <p className="text-xs font-semibold uppercase tracking-wide text-wtva-muted">
@@ -63,6 +59,12 @@ export function EventSeriesCard({
         {series.description && !large && (
           <p className="mt-2 line-clamp-2 text-sm text-wtva-subtle">{series.description}</p>
         )}
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent">
+            <Repeat className="h-3 w-3" aria-hidden />
+            {series.event_type}
+          </span>
+        </div>
       </div>
     </Link>
   );
