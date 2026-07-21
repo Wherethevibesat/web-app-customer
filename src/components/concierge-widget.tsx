@@ -49,6 +49,15 @@ export function ConciergeWidget({ floating = true }: { floating?: boolean }) {
     node.scrollTop = node.scrollHeight;
   }, [turns, busy, open]);
 
+  useEffect(() => {
+    if (!floating || !open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [floating, open]);
+
   async function ask(nextQuery?: string) {
     const prompt = (nextQuery ?? query).trim();
     if (!prompt) return;
@@ -265,7 +274,19 @@ export function ConciergeWidget({ floating = true }: { floating?: boolean }) {
       )}
 
       {open && (
-        <div className="fixed bottom-24 right-4 z-50 w-[min(420px,calc(100vw-1rem))] rounded-2xl border border-wtva-dark-300 bg-wtva-card p-4 shadow-2xl md:bottom-6">
+        <>
+          <button
+            type="button"
+            aria-label="Close concierge"
+            onClick={() => setOpen(false)}
+            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity"
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Vibes Concierge"
+            className="fixed bottom-24 right-4 z-50 w-[min(420px,calc(100vw-1rem))] rounded-2xl border border-wtva-dark-300 bg-wtva-card p-4 shadow-2xl md:bottom-6"
+          >
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-wtva-muted" />
@@ -290,7 +311,8 @@ export function ConciergeWidget({ floating = true }: { floating?: boolean }) {
               </div>
             </div>
             {chatContent}
-        </div>
+          </div>
+        </>
       )}
     </>
   );
