@@ -223,6 +223,45 @@ export async function getEvent(id: string): Promise<Event | null> {
   return mapEventRow(data as Record<string, unknown>);
 }
 
+/** Nearby calendar fillers for thin event pages (same type / neighborhood). */
+export async function listSimilarEvents(
+  event: Pick<Event, "id" | "event_type" | "neighborhood">,
+  limit = 4,
+): Promise<Event[]> {
+  const byType = await listPublishedEvents({
+    upcomingOnly: true,
+    eventType: event.event_type,
+    limit: limit + 6,
+  }).catch(() => [] as Event[]);
+
+  let pool = byType.filter((e) => e.id !== event.id);
+  if (pool.length < limit && event.neighborhood) {
+    const byHood = await listPublishedEvents({
+      upcomingOnly: true,
+      neighborhood: event.neighborhood,
+      limit: limit + 6,
+    }).catch(() => [] as Event[]);
+    const seen = new Set(pool.map((e) => e.id));
+    for (const e of byHood) {
+      if (e.id === event.id || seen.has(e.id)) continue;
+      pool.push(e);
+      seen.add(e.id);
+    }
+  }
+  if (pool.length < limit) {
+    const any = await listPublishedEvents({ upcomingOnly: true, limit: limit + 8 }).catch(
+      () => [] as Event[],
+    );
+    const seen = new Set(pool.map((e) => e.id));
+    for (const e of any) {
+      if (e.id === event.id || seen.has(e.id)) continue;
+      pool.push(e);
+      seen.add(e.id);
+    }
+  }
+  return pool.slice(0, limit);
+}
+
 export async function getEventTypes(): Promise<string[]> {
   const { listBrowseFeed } = await import("@/lib/browse-events");
   const items = await listBrowseFeed({ limit: 200 });

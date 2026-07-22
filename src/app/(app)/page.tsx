@@ -11,10 +11,11 @@ import { HomeDiscoverTabs } from "@/components/home-discover-tabs";
 import { HomeTonightCategories } from "@/components/home-tonight-categories";
 import { VenueCard } from "@/components/venue-card";
 import { HeroCitySelect } from "@/components/hero-city-select";
+import { EventInterestForm } from "@/components/event-interest-form";
 import { browseItemKey, listBrowseFeed, listHomepageFeaturedItems } from "@/lib/browse-events";
 import { getBusinessPortalUrl } from "@/lib/business-portal-url";
 import { buttonClass } from "@/lib/button";
-import { DEFAULT_CITY } from "@/lib/cities";
+import { DEFAULT_CITY, cityLabel } from "@/lib/cities";
 import { getEventTypes } from "@/lib/data/events";
 import { listNeighborhoodOptions } from "@/lib/data/neighborhoods";
 import { getMyRanking } from "@/lib/data/rankings";
@@ -83,9 +84,11 @@ export default async function HomePage() {
                 ))}
               </div>
             ) : (
-              <p className="rounded-xl border border-dashed border-wtva-dark-300 py-16 text-center text-wtva-muted">
-                No featured events yet. Check back soon or explore Discover.
-              </p>
+              <EventInterestForm
+                source="empty_feed"
+                initialCity={cityLabel(DEFAULT_CITY)}
+                compact
+              />
             )
           }
           upcoming={
@@ -96,9 +99,11 @@ export default async function HomePage() {
                 ))}
               </div>
             ) : (
-              <p className="rounded-xl border border-dashed border-wtva-dark-300 py-16 text-center text-wtva-muted">
-                No upcoming events yet. Check back soon or explore venues.
-              </p>
+              <EventInterestForm
+                source="empty_feed"
+                initialCity={cityLabel(DEFAULT_CITY)}
+                compact
+              />
             )
           }
           venues={

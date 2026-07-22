@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { MapPin, Repeat } from "lucide-react";
-import { getEvent, listEventVipPackages } from "@/lib/data/events";
+import { Clock, MapPin, Music2, Repeat, Sparkles } from "lucide-react";
+import { getEvent, listSimilarEvents, listEventVipPackages } from "@/lib/data/events";
 import { eventImage } from "@/lib/placeholder";
 import { buttonClass } from "@/lib/button";
 import { formatRecurringSchedule, getEventSeries } from "@/lib/data/event-series";
@@ -16,6 +16,8 @@ import {
 import { formatEventDateTime, formatPrice } from "@/lib/format";
 import { getPublishableKey } from "@/lib/stripe/server";
 import { EventTicketsSection } from "@/components/event-tickets-section";
+import { EventInterestForm } from "@/components/event-interest-form";
+import { EventCard } from "@/components/event-card";
 import { createClient } from "@/lib/supabase/server";
 
 export async function generateMetadata({
@@ -41,15 +43,18 @@ export default async function EventDetailPage({
   const event = await getEvent(id);
   if (!event) notFound();
 
-  const [vipPackages, promoterOffers, seriesData] = await Promise.all([
+  const [vipPackages, promoterOffers, seriesData, similar] = await Promise.all([
     listEventVipPackages(id),
     listOffersForEvent(id),
     event.series_id ? getEventSeries(event.series_id) : Promise.resolve(null),
+    listSimilarEvents(event, 4),
   ]);
   const ticketTiers = await listEventTicketTiers(id);
   const publishableKey = await getPublishableKey();
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const existingRegistration = user
     ? await userRegistrationForEvent(user.id, id)
     : null;
@@ -59,10 +64,43 @@ export default async function EventDetailPage({
       ? existingRegistration.event_ticket_tiers[0]?.name
       : (existingRegistration.event_ticket_tiers as { name: string }).name);
 
+  const expectItems = [
+    { icon: Music2, label: "Vibe", value: event.event_type },
+    {
+      icon: Clock,
+      label: "When",
+      value: formatEventDateTime(event.starts_at, event.ends_at),
+    },
+    {
+      icon: MapPin,
+      label: "Where",
+      value:
+        [event.venue?.name, event.neighborhood ?? event.venue?.neighborhood]
+          .filter(Boolean)
+          .join(" · ") || "Houston",
+    },
+    {
+      icon: Sparkles,
+      label: "Good to know",
+      value: seriesData
+        ? `Repeats ${formatRecurringSchedule(seriesData.series.recurrence).toLowerCase()}`
+        : event.featured
+          ? "Featured pick by WTVA"
+          : "Check the venue page for hours & VIP",
+    },
+  ];
+
   return (
     <article>
       <div className="relative aspect-[21/9] max-h-[420px] w-full bg-wtva-dark-400">
-        <Image src={eventImage(event.image_url)} alt="" fill className="object-cover" unoptimized priority />
+        <Image
+          src={eventImage(event.image_url)}
+          alt=""
+          fill
+          className="object-cover"
+          unoptimized
+          priority
+        />
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
       </div>
 
@@ -121,6 +159,53 @@ export default async function EventDetailPage({
           </div>
         )}
 
+        <section className="mt-10">
+          <h2 className="text-xl font-bold">What to expect</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            {expectItems.map(({ icon: Icon, label, value }) => (
+              <div
+                key={label}
+                className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-4 shadow-card"
+              >
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-wtva-muted">
+                  <Icon className="h-3.5 w-3.5 text-accent" />
+                  {label}
+                </div>
+                <p className="mt-2 text-sm font-semibold leading-snug">{value}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {event.venue && (
+          <section className="mt-10">
+            <h2 className="text-xl font-bold">At the venue</h2>
+            <Link
+              href={`/venues/${event.venue.id}`}
+              className="mt-4 flex gap-4 overflow-hidden rounded-2xl border border-wtva-dark-300 bg-wtva-card shadow-card transition hover:-translate-y-0.5 hover:shadow-card-hover"
+            >
+              <div className="relative h-28 w-28 shrink-0 bg-wtva-dark-400 sm:h-32 sm:w-36">
+                <Image
+                  src={eventImage(event.venue.image_url)}
+                  alt=""
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
+              </div>
+              <div className="min-w-0 flex-1 py-4 pr-4">
+                <p className="font-bold">{event.venue.name}</p>
+                <p className="mt-1 text-sm text-wtva-muted">
+                  {[event.venue.venue_type, event.venue.neighborhood ?? event.neighborhood]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+                <p className="mt-3 text-sm font-semibold text-accent">View venue →</p>
+              </div>
+            </Link>
+          </section>
+        )}
+
         <div className="mt-10 flex flex-wrap gap-3">
           {event.venue_id && (
             <Link
@@ -137,15 +222,26 @@ export default async function EventDetailPage({
           )}
         </div>
 
-        <EventTicketsSection
-          eventId={id}
-          tiers={ticketTiers}
-          publishableKey={publishableKey}
-          isSignedIn={Boolean(user)}
-          existingRegistration={
-            registeredTierName ? { tierName: registeredTierName } : null
-          }
-        />
+        {ticketTiers.length > 0 ? (
+          <EventTicketsSection
+            eventId={id}
+            tiers={ticketTiers}
+            publishableKey={publishableKey}
+            isSignedIn={Boolean(user)}
+            existingRegistration={
+              registeredTierName ? { tierName: registeredTierName } : null
+            }
+          />
+        ) : (
+          <section className="mt-12">
+            <EventInterestForm
+              source="notify_me"
+              eventId={id}
+              venueId={event.venue_id}
+              eventTitle={event.title}
+            />
+          </section>
+        )}
 
         <PromoterOffersSection
           eventId={id}
@@ -178,6 +274,31 @@ export default async function EventDetailPage({
             </ul>
           </section>
         )}
+
+        {similar.length > 0 && (
+          <section className="mt-12">
+            <div className="flex items-end justify-between gap-4">
+              <h2 className="text-xl font-bold">More nights like this</h2>
+              <Link href="/discover/events" className="text-sm font-semibold text-accent hover:opacity-80">
+                View all →
+              </Link>
+            </div>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              {similar.map((item) => (
+                <EventCard key={item.id} event={item} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        <section className="mt-12">
+          <EventInterestForm
+            source="tip_a_night"
+            eventId={id}
+            venueId={event.venue_id}
+            compact
+          />
+        </section>
       </div>
     </article>
   );
