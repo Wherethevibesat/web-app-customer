@@ -10,7 +10,7 @@ const links = [
   { href: "/discover/events", label: "Events", icon: Calendar },
   { href: "/packages", label: "Plan", icon: MoonStar },
   { href: "/venues", label: "Venues", icon: Building2 },
-  { href: "/profile", label: "You", icon: User },
+  { href: "/dashboard", label: "You", icon: User },
 ];
 
 export function MobileNav() {

@@ -21,7 +21,14 @@ const PUBLIC_PREFIXES = [
   "/configuration-error",
 ];
 
-const PROTECTED_PREFIXES = ["/check-in", "/profile", "/ranking", "/messages", "/settings"];
+const PROTECTED_PREFIXES = [
+  "/dashboard",
+  "/check-in",
+  "/profile",
+  "/ranking",
+  "/messages",
+  "/settings",
+];
 
 function isPublicPath(path: string) {
   return PUBLIC_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));

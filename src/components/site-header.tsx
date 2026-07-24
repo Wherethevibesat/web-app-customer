@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Search, Menu, X, User, ChevronDown, Settings, LogOut } from "lucide-react";
+import { Search, Menu, X, User, ChevronDown, Settings, LogOut, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { buttonClass } from "@/lib/button";
 
@@ -126,12 +126,20 @@ export function SiteHeader({
               <p className="truncate text-sm font-semibold">{userName}</p>
             </div>
             <Link
+              href="/dashboard"
+              onClick={() => setAccountOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-wtva-dark-400"
+            >
+              <LayoutDashboard className="h-4 w-4 text-wtva-subtle" />
+              Dashboard
+            </Link>
+            <Link
               href="/profile"
               onClick={() => setAccountOpen(false)}
               className="flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-wtva-dark-400"
             >
               <User className="h-4 w-4 text-wtva-subtle" />
-              Profile
+              Account
             </Link>
             <Link
               href="/settings"
@@ -286,8 +294,11 @@ export function SiteHeader({
             <div className="mt-3 flex flex-col gap-2 border-t border-wtva-dark-300 pt-3">
               {isSignedIn ? (
                 <>
+                  <Link href="/dashboard" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm">
+                    Dashboard
+                  </Link>
                   <Link href="/profile" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm">
-                    Profile
+                    Account
                   </Link>
                   <Link href="/check-in" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm">
                     Check in

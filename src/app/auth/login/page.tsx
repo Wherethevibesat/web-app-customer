@@ -11,7 +11,7 @@ import { buttonClass } from "@/lib/button";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/";
+  const next = searchParams.get("next") ?? "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,7 @@ function LoginForm() {
   }
 
   return (
-    <AuthCard title="Welcome back" subtitle="Customer sign in — check in, save favorites, and climb the ranks">
+    <AuthCard title="Welcome back" subtitle="Sign in to your dashboard — plans, check-ins, and favorites">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="mb-1 block text-xs text-wtva-muted">Email</label>

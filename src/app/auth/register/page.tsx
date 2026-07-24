@@ -31,14 +31,14 @@ export default function RegisterPage() {
       setError(err.message);
       return;
     }
-    router.push("/profile");
+    router.push("/dashboard");
     router.refresh();
   }
 
   return (
     <AuthCard
       title="Join free"
-      subtitle="Create a customer account to discover events, check in at venues, and earn points"
+      subtitle="Create a customer account to plan nights, check in, and save favorites"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

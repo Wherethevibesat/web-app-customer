@@ -5,8 +5,10 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const links = [
-  { href: "/profile", label: "Overview" },
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/profile", label: "Account" },
   { href: "/profile/favorites", label: "Favorites" },
+  { href: "/packages/orders", label: "My nights" },
   { href: "/check-in", label: "Check in" },
   { href: "/messages", label: "Messages" },
   { href: "/settings", label: "Settings" },
@@ -19,9 +21,11 @@ export function AccountNav() {
     <nav className="flex flex-wrap gap-2 border-b border-wtva-dark-300 pb-4">
       {links.map(({ href, label }) => {
         const active =
-          href === "/profile"
-            ? pathname === "/profile"
-            : pathname === href || pathname.startsWith(`${href}/`);
+          href === "/dashboard"
+            ? pathname === "/dashboard"
+            : href === "/profile"
+              ? pathname === "/profile"
+              : pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link
             key={href}
