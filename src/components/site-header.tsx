@@ -10,6 +10,7 @@ import { buttonClass } from "@/lib/button";
 
 const NAV = [
   { href: "/discover", label: "Discover" },
+  { href: "/packages", label: "Plan" },
   { href: "/discover/concierge", label: "Concierge" },
   { href: "/discover/events", label: "Events" },
   { href: "/venues", label: "Venues" },

@@ -143,6 +143,267 @@ export async function getVipCommissionPct(): Promise<number> {
   return Number(data?.vip_commission_pct ?? 10);
 }
 
+export async function getNightPackageCommissionPct(): Promise<number> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("platform_settings")
+    .select("night_package_commission_pct")
+    .eq("id", 1)
+    .maybeSingle();
+  return Number(data?.night_package_commission_pct ?? 15);
+}
+
+export type NightPackageCheckoutStop = {
+  stop_offer_id: string;
+  venue_id: string;
+  title: string;
+  slot_type: string;
+  price_cents: number;
+  sort_order: number;
+  scheduled_label: string | null;
+};
+
+export type NightPackageCheckout = {
+  id: string;
+  title: string;
+  party_size_min: number;
+  party_size_max: number;
+  stops: NightPackageCheckoutStop[];
+};
+
+export async function getPublishedNightPackageForCheckout(
+  packageId: string,
+  options?: { useAdmin?: boolean },
+): Promise<NightPackageCheckout | null> {
+  const supabase = options?.useAdmin ? createAdminClient() : await createClient();
+  const { data, error } = await supabase
+    .from("night_packages")
+    .select(
+      `
+      id, title, party_size_min, party_size_max, status,
+      stops:night_package_stops(
+        sort_order, scheduled_label, stop_offer_id,
+        stop_offer:package_stop_offers(
+          id, title, slot_type, price_cents, status, is_active, venue_id
+        )
+      )
+    `,
+    )
+    .eq("id", packageId)
+    .eq("status", "published")
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+
+  type Offer = {
+    id: string;
+    title: string;
+    slot_type: string;
+    price_cents: number;
+    status: string;
+    is_active: boolean;
+    venue_id: string;
+  };
+
+  type RawStop = {
+    sort_order: number;
+    scheduled_label: string | null;
+    stop_offer_id: string;
+    stop_offer: Offer | Offer[] | null;
+  };
+
+  const stops = ((data.stops as unknown as RawStop[]) ?? [])
+    .map((s) => {
+      const offer = Array.isArray(s.stop_offer) ? s.stop_offer[0] : s.stop_offer;
+      return { ...s, stop_offer: offer ?? null };
+    })
+    .filter(
+      (s) =>
+        s.stop_offer &&
+        s.stop_offer.status === "approved" &&
+        s.stop_offer.is_active,
+    )
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map((s) => ({
+      stop_offer_id: s.stop_offer!.id,
+      venue_id: s.stop_offer!.venue_id,
+      title: s.stop_offer!.title,
+      slot_type: s.stop_offer!.slot_type,
+      price_cents: s.stop_offer!.price_cents,
+      sort_order: s.sort_order,
+      scheduled_label: s.scheduled_label,
+    }));
+
+  return {
+    id: data.id as string,
+    title: data.title as string,
+    party_size_min: Number(data.party_size_min ?? 1),
+    party_size_max: Number(data.party_size_max ?? 20),
+    stops,
+  };
+}
+
+export async function resolveApprovedStopOffers(
+  stopOfferIds: string[],
+  options?: { useAdmin?: boolean },
+): Promise<NightPackageCheckoutStop[]> {
+  const unique = [...new Set(stopOfferIds.map((id) => id.trim()).filter(Boolean))];
+  if (!unique.length) return [];
+
+  const supabase = options?.useAdmin ? createAdminClient() : await createClient();
+  const { data, error } = await supabase
+    .from("package_stop_offers")
+    .select("id, title, slot_type, price_cents, status, is_active, venue_id")
+    .in("id", unique)
+    .eq("status", "approved")
+    .eq("is_active", true);
+  if (error) throw error;
+
+  const byId = new Map(
+    (data ?? []).map((row) => [
+      row.id as string,
+      {
+        stop_offer_id: row.id as string,
+        venue_id: row.venue_id as string,
+        title: row.title as string,
+        slot_type: row.slot_type as string,
+        price_cents: Number(row.price_cents),
+        sort_order: 0,
+        scheduled_label: null as string | null,
+      },
+    ]),
+  );
+
+  return unique
+    .map((id, index) => {
+      const stop = byId.get(id);
+      if (!stop) return null;
+      return { ...stop, sort_order: index };
+    })
+    .filter((s): s is NightPackageCheckoutStop => s != null);
+}
+
+export function parseStopOfferIdsFromMetadata(raw: string | undefined): string[] {
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 12);
+}
+
+export async function recordNightPackageOrder(params: {
+  userId: string;
+  packageId: string;
+  partySize: number;
+  subtotalCents: number;
+  commissionCents: number;
+  totalCents: number;
+  paymentIntentId: string;
+  status: "paid" | "failed";
+  stopOfferIds?: string[];
+  guestName?: string | null;
+  guestEmail?: string | null;
+}): Promise<{ orderId: string | null; created: boolean }> {
+  const admin = createAdminClient();
+  const now = new Date().toISOString();
+
+  const { data: existing } = await admin
+    .from("night_package_orders")
+    .select("id, status")
+    .eq("stripe_payment_intent_id", params.paymentIntentId)
+    .maybeSingle();
+
+  if (existing?.id) {
+    if (existing.status === params.status) {
+      return { orderId: existing.id as string, created: false };
+    }
+    const { error: updateError } = await admin
+      .from("night_package_orders")
+      .update({
+        status: params.status,
+        paid_at: params.status === "paid" ? now : null,
+        updated_at: now,
+      })
+      .eq("id", existing.id);
+    if (updateError) throw updateError;
+    return { orderId: existing.id as string, created: false };
+  }
+
+  // Only persist successful night-package orders (failed PIs leave no row).
+  if (params.status !== "paid") {
+    return { orderId: null, created: false };
+  }
+
+  const pkg = await getPublishedNightPackageForCheckout(params.packageId, {
+    useAdmin: true,
+  });
+  if (!pkg) throw new Error("Night package unavailable");
+
+  const stops =
+    params.stopOfferIds && params.stopOfferIds.length > 0
+      ? await resolveApprovedStopOffers(params.stopOfferIds, { useAdmin: true })
+      : pkg.stops;
+  if (!stops.length) throw new Error("Night package stops unavailable");
+
+  const { data: order, error: orderError } = await admin
+    .from("night_package_orders")
+    .insert({
+      package_id: params.packageId,
+      user_id: params.userId,
+      party_size: params.partySize,
+      subtotal_cents: params.subtotalCents,
+      commission_cents: params.commissionCents,
+      total_cents: params.totalCents,
+      status: "paid",
+      stripe_payment_intent_id: params.paymentIntentId,
+      guest_name: params.guestName ?? null,
+      guest_email: params.guestEmail ?? null,
+      paid_at: now,
+      updated_at: now,
+    })
+    .select("id")
+    .single();
+
+  if (orderError) {
+    if (orderError.code === "23505") {
+      const { data: again } = await admin
+        .from("night_package_orders")
+        .select("id")
+        .eq("stripe_payment_intent_id", params.paymentIntentId)
+        .maybeSingle();
+      return { orderId: (again?.id as string) ?? null, created: false };
+    }
+    throw orderError;
+  }
+
+  // Guest paid service fee on top; venues settle the full stop line total later.
+  const stopRows = stops.map((stop) => {
+    const lineTotal = stop.price_cents * params.partySize;
+    return {
+      order_id: order.id,
+      stop_offer_id: stop.stop_offer_id,
+      venue_id: stop.venue_id,
+      sort_order: stop.sort_order,
+      title: stop.title,
+      slot_type: stop.slot_type,
+      unit_price_cents: stop.price_cents,
+      party_size: params.partySize,
+      line_total_cents: lineTotal,
+      venue_payout_cents: lineTotal,
+      scheduled_label: stop.scheduled_label,
+      status: "confirmed",
+    };
+  });
+
+  const { error: stopsError } = await admin
+    .from("night_package_order_stops")
+    .insert(stopRows);
+  if (stopsError) throw stopsError;
+
+  return { orderId: order.id as string, created: true };
+}
+
 type StripeAccountRow = {
   stripe_account_id: string;
 };
@@ -176,6 +437,7 @@ const COMMISSION_TYPES: Record<string, string> = {
   vip_order: "vip_commission",
   event_registration: "event_ticket_commission",
   driver_booking: "driver_booking_commission",
+  night_package_order: "night_package_commission",
 };
 
 export async function recordPlatformTransaction(params: {
@@ -220,6 +482,7 @@ async function recordMarketplaceCommission(intent: Stripe.PaymentIntent) {
     vip_commission: "VIP sale commission",
     event_ticket_commission: "Event ticket commission",
     driver_booking_commission: "Driver booking commission",
+    night_package_commission: "Build Your Night commission",
   };
 
   await recordPlatformTransaction({
@@ -236,8 +499,46 @@ async function recordMarketplaceCommission(intent: Stripe.PaymentIntent) {
   });
 }
 
+async function recordNightPackagePlatformCommission(intent: Stripe.PaymentIntent) {
+  if (intent.status !== "succeeded") return;
+  const commissionCents = Number(intent.metadata.commission_cents ?? 0);
+  if (!Number.isFinite(commissionCents) || commissionCents <= 0) return;
+
+  await recordPlatformTransaction({
+    userId: intent.metadata.user_id ?? null,
+    type: "night_package_commission",
+    amount: commissionCents / 100,
+    description: "Build Your Night commission",
+    status: "completed",
+    paymentIntentId: intent.id,
+    metadata: {
+      payment_type: "night_package_order",
+      night_package_id: intent.metadata.night_package_id ?? null,
+      party_size: intent.metadata.party_size ?? null,
+    },
+  });
+}
+
 export async function handlePaymentIntentFailure(intent: Stripe.PaymentIntent) {
   const paymentType = intent.metadata.type ?? (intent.metadata.vip_package_id ? "vip_order" : "");
+
+  if (paymentType === "night_package_order" || intent.metadata.night_package_id) {
+    const packageId = intent.metadata.night_package_id;
+    const userId = intent.metadata.user_id;
+    if (packageId && userId) {
+      await recordNightPackageOrder({
+        userId,
+        packageId,
+        partySize: Number(intent.metadata.party_size ?? 1) || 1,
+        subtotalCents: Number(intent.metadata.subtotal_cents ?? intent.amount) || intent.amount,
+        commissionCents: Number(intent.metadata.commission_cents ?? 0) || 0,
+        totalCents: intent.amount,
+        paymentIntentId: intent.id,
+        status: "failed",
+      });
+    }
+    return;
+  }
 
   if (paymentType === "vip_order" || intent.metadata.vip_package_id) {
     const vipPackageId = intent.metadata.vip_package_id;
@@ -316,8 +617,40 @@ export async function confirmDriverBookingPayment(params: {
 
 export async function fulfillStripePaymentIntent(
   intent: Stripe.PaymentIntent,
-): Promise<{ kind: "driver_booking" | "event_registration" | "vip_order" | "ignored"; updated: boolean }> {
+): Promise<{
+  kind:
+    | "driver_booking"
+    | "event_registration"
+    | "vip_order"
+    | "night_package_order"
+    | "ignored";
+  updated: boolean;
+}> {
   const type = intent.metadata.type;
+
+  if (type === "night_package_order" || intent.metadata.night_package_id) {
+    const packageId = intent.metadata.night_package_id;
+    const userId = intent.metadata.user_id;
+    if (!packageId || !userId) {
+      throw new Error("Night package order metadata is incomplete.");
+    }
+
+    const result = await recordNightPackageOrder({
+      userId,
+      packageId,
+      partySize: Number(intent.metadata.party_size ?? 1) || 1,
+      subtotalCents: Number(intent.metadata.subtotal_cents ?? intent.amount) || intent.amount,
+      commissionCents: Number(intent.metadata.commission_cents ?? 0) || 0,
+      totalCents: intent.amount_received ?? intent.amount,
+      paymentIntentId: intent.id,
+      status: intent.status === "succeeded" ? "paid" : "failed",
+      stopOfferIds: parseStopOfferIdsFromMetadata(intent.metadata.stop_offer_ids),
+    });
+    if (result.created) {
+      await recordNightPackagePlatformCommission(intent);
+    }
+    return { kind: "night_package_order", updated: result.created };
+  }
 
   if (type === "driver_booking") {
     const bookingId = intent.metadata.booking_id;

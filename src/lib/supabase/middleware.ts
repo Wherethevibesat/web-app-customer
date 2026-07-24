@@ -8,6 +8,7 @@ const PUBLIC_PREFIXES = [
   "/",
   "/events",
   "/venues",
+  "/packages",
   "/search",
   "/map",
   "/neighborhoods",

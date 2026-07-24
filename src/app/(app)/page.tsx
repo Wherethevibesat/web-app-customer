@@ -6,9 +6,9 @@ import { HeroVideoBackground } from "@/components/hero-video-background";
 import { HomeBusinessSection } from "@/components/home-business-section";
 import { HomeConciergeBanner } from "@/components/home-concierge-banner";
 import { HomeHeroSearch } from "@/components/home-hero-search";
-import { HomeRewardsSection } from "@/components/home-rewards-section";
 import { HomeDiscoverTabs } from "@/components/home-discover-tabs";
 import { HomeTonightCategories } from "@/components/home-tonight-categories";
+import { HomeBuildYourNight } from "@/components/home-build-your-night";
 import { VenueCard } from "@/components/venue-card";
 import { HeroCitySelect } from "@/components/hero-city-select";
 import { EventInterestForm } from "@/components/event-interest-form";
@@ -18,9 +18,7 @@ import { buttonClass } from "@/lib/button";
 import { DEFAULT_CITY, cityLabel } from "@/lib/cities";
 import { getEventTypes } from "@/lib/data/events";
 import { listNeighborhoodOptions } from "@/lib/data/neighborhoods";
-import { getMyRanking } from "@/lib/data/rankings";
 import { listVenues } from "@/lib/data/venues";
-import { createClient } from "@/lib/supabase/server";
 
 const HERO_VIDEO_SRC =
   process.env.NEXT_PUBLIC_HERO_VIDEO_URL?.trim() || "/videos/hero.mp4";
@@ -29,19 +27,13 @@ const HERO_VIDEO_POSTER =
 
 export default async function HomePage() {
   const host = (await headers()).get("host");
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const [featuredItems, upcomingItems, venues, neighborhoods, eventTypes, ranking] =
+  const [featuredItems, upcomingItems, venues, neighborhoods, eventTypes] =
     await Promise.all([
       listHomepageFeaturedItems(8).catch(() => []),
       listBrowseFeed({ limit: 4 }).catch(() => []),
       listVenues().catch(() => []),
       listNeighborhoodOptions().catch(() => []),
       getEventTypes().catch(() => []),
-      user ? getMyRanking(user.id).catch(() => null) : Promise.resolve(null),
     ]);
 
   const featuredTonight = featuredItems.length > 0 ? featuredItems : upcomingItems;
@@ -74,6 +66,7 @@ export default async function HomePage() {
 
       <div className="mx-auto max-w-7xl space-y-16 px-4 py-12 lg:px-8 lg:py-16">
         <HomeTonightCategories />
+        <HomeBuildYourNight />
 
         <HomeDiscoverTabs
           featured={
@@ -128,8 +121,6 @@ export default async function HomePage() {
           promoterRegisterUrl={getBusinessPortalUrl("/auth/register?role=promoter", host)}
           driverRegisterUrl={getBusinessPortalUrl("/auth/register?role=driver", host)}
         />
-
-        <HomeRewardsSection points={ranking?.points ?? null} />
       </div>
     </>
   );

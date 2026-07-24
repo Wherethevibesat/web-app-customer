@@ -104,6 +104,12 @@ export default async function ProfilePage() {
             </div>
           )}
           <div className="rounded-xl border border-wtva-dark-300 bg-wtva-card p-5 space-y-3 text-sm">
+            <Link href="/packages/orders" className="block hover:underline">
+              Night package bookings →
+            </Link>
+            <Link href="/packages" className="block hover:underline">
+              Build Your Night →
+            </Link>
             <Link href="/profile/favorites" className="block hover:underline">
               Saved venues →
             </Link>

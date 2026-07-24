@@ -3,7 +3,7 @@ import type { ComponentType } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ExternalLink, Globe, MapPin, Phone, Star, Trophy } from "lucide-react";
+import { ArrowLeft, ExternalLink, Globe, MapPin, Phone, Star } from "lucide-react";
 import { FavoriteButton } from "@/components/favorite-button";
 import { MessageVenueButton } from "@/components/message-venue-button";
 import { BrowseEventCard } from "@/components/browse-event-card";
@@ -560,20 +560,14 @@ export default async function VenueDetailPage({
           </section>
         )}
 
-        {/* Rewards banner */}
         <section className="mt-16">
           <div className="overflow-hidden rounded-3xl bg-accent-gradient p-8 shadow-accent sm:p-10">
             <div className="flex flex-col items-start gap-6 md:flex-row md:items-center md:justify-between">
               <div className="max-w-xl">
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20">
-                  <Trophy className="h-6 w-6 text-white" />
-                </div>
-                <h2 className="mt-4 text-2xl font-bold text-white">
-                  Earn rewards for living the vibe
-                </h2>
+                <h2 className="text-2xl font-bold text-white">Are you here tonight?</h2>
                 <p className="mt-2 text-sm text-white/85">
-                  Check in, invite friends, and complete challenges to level up and unlock
-                  exclusive perks at {venue.name}.
+                  Check in at {venue.name} to save it to your history and let the venue know
+                  you showed up.
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -587,7 +581,7 @@ export default async function VenueDetailPage({
                   href="/discover"
                   className="rounded-full border border-white/40 px-6 py-3 text-sm font-semibold text-white hover:bg-white/10"
                 >
-                  Learn more
+                  Discover more
                 </Link>
               </div>
             </div>

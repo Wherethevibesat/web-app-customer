@@ -8,7 +8,6 @@ const links = [
   { href: "/profile", label: "Overview" },
   { href: "/profile/favorites", label: "Favorites" },
   { href: "/check-in", label: "Check in" },
-  { href: "/rewards", label: "Rewards" },
   { href: "/messages", label: "Messages" },
   { href: "/settings", label: "Settings" },
 ];

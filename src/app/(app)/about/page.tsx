@@ -36,7 +36,7 @@ export default async function AboutPage() {
           same way — details, venue, and checkout on the date you choose.
         </p>
         <p>
-          Check in when you go out to earn points and climb the city leaderboard. Save
+          Check in when you go out and keep a history of your nights. Save
           favorite venues, explore the map and neighborhoods, and message venues when you need
           more info. VIP packages and promoter table offers are available on select events and
           venues when hosts list them.

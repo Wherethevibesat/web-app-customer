@@ -12,7 +12,7 @@ const CARDS = [
     id: "venues",
     title: "For Venues",
     description: "Get discovered, sell tickets & VIP, and prove who's in the room with check-in QR.",
-    bullets: ["List your venue", "Sell tickets & VIP", "Validate rewards"],
+    bullets: ["List your venue", "Sell tickets & VIP", "Reach nightlife customers"],
     cta: "List your venue →",
     tone: "from-[#5b21b6]/90 to-[#9d174d]/85",
     icon: Building2,

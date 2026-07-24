@@ -6,7 +6,6 @@ import { AccountNav } from "@/components/account-nav";
 import { PageShell } from "@/components/page-shell";
 import { createClient } from "@/lib/supabase/server";
 import { listVenues } from "@/lib/data/venues";
-import { CHECK_IN_POINTS } from "@/lib/ranking-rules";
 
 export default async function CheckInPage({
   searchParams,
@@ -14,7 +13,9 @@ export default async function CheckInPage({
   searchParams: Promise<{ venue?: string; token?: string }>;
 }) {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login?next=/check-in");
 
   const { venue: venueId, token } = await searchParams;
@@ -24,7 +25,7 @@ export default async function CheckInPage({
   return (
     <PageShell
       title="Check in"
-      subtitle={`Earn +${CHECK_IN_POINTS} points every time you check in at a venue`}
+      subtitle="Let venues know you're there and keep a history of your nights out"
       width="wide"
     >
       <AccountNav />
@@ -38,16 +39,10 @@ export default async function CheckInPage({
             <h2 className="mt-3 font-semibold">How it works</h2>
             <ol className="mt-4 list-decimal space-y-2 pl-5 text-sm text-wtva-muted">
               <li>Pick the venue you&apos;re at right now</li>
-              <li>Add an optional caption</li>
-              <li>Submit — points apply instantly to your rank</li>
+              <li>Scan the venue QR if required</li>
+              <li>Add an optional caption and submit</li>
             </ol>
           </div>
-          <Link
-            href="/ranking"
-            className="block rounded-xl border border-wtva-dark-300 bg-wtva-card p-5 text-sm font-medium hover:border-foreground"
-          >
-            View leaderboard →
-          </Link>
           <Link
             href="/venues"
             className="block rounded-xl border border-wtva-dark-300 bg-wtva-card p-5 text-sm font-medium hover:border-foreground"
