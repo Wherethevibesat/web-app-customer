@@ -7,6 +7,10 @@ import {
   getStripe,
   resolveApprovedStopOffers,
 } from "@/lib/stripe/server";
+import {
+  assertVibeVenuesConnectReady,
+  connectGapErrorMessage,
+} from "@/lib/stripe/vibe-marketplace";
 
 export async function POST(request: Request) {
   const { user } = await requireUser(request);
@@ -61,6 +65,17 @@ export async function POST(request: Request) {
 
     if (!stops.length) {
       return NextResponse.json({ error: "Add at least one stop to your plan" }, { status: 409 });
+    }
+
+    const connect = await assertVibeVenuesConnectReady(stops);
+    if (!connect.ok) {
+      return NextResponse.json(
+        {
+          error: connectGapErrorMessage(connect.gaps),
+          venuesNeedingConnect: connect.gaps,
+        },
+        { status: 409 },
+      );
     }
 
     const unitSubtotal = stops.reduce((sum, s) => sum + s.price_cents, 0);

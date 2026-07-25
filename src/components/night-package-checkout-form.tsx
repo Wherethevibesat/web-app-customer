@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { buttonClass } from "@/lib/button";
 import { vibeCopy } from "@/lib/vibe-copy";
+import { VibeSplitCheckout } from "@/components/vibe-split-checkout";
 import {
   Elements,
   PaymentElement,
@@ -57,12 +58,24 @@ function CheckoutForm({
     }
 
     if (paymentIntent) {
-      await fetch("/api/checkout/confirm", {
+      const confirmRes = await fetch("/api/checkout/night-package/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paymentIntentId: paymentIntent.id }),
       });
+      const confirmData = (await confirmRes.json().catch(() => ({}))) as {
+        status?: string;
+        error?: string;
+      };
       if (paymentIntent.status === "succeeded") {
+        if (!confirmRes.ok || confirmData.status !== "confirmed") {
+          setError(
+            confirmData.error ??
+              "Payment succeeded, but confirming your plan failed. Check My Plans.",
+          );
+          setLoading(false);
+          return;
+        }
         router.push(
           `/packages/${packageId}/checkout?success=1&party=${partySize}&startsOn=${startsOn}`,
         );
@@ -111,6 +124,7 @@ export function NightPackageCheckoutForm({
   hidePartySelect = false,
 }: Props) {
   const [partySize, setPartySize] = useState(initialPartySize);
+  const [payMode, setPayMode] = useState<"solo" | "split">("solo");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [breakdown, setBreakdown] = useState<{
     amount: number;
@@ -125,6 +139,7 @@ export function NightPackageCheckoutForm({
     new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n);
 
   useEffect(() => {
+    if (payMode !== "solo") return;
     let cancelled = false;
     setLoadingIntent(true);
     setClientSecret(null);
@@ -154,12 +169,37 @@ export function NightPackageCheckoutForm({
     return () => {
       cancelled = true;
     };
-  }, [packageId, partySize, startsOn, stopOfferIds.join(",")]);
+  }, [packageId, partySize, startsOn, stopOfferIds.join(","), payMode]);
 
   const stripePromise = loadStripe(publishableKey);
 
   return (
     <div className="space-y-6">
+      <div className="inline-flex gap-1 rounded-full border border-wtva-dark-300 bg-wtva-dark-400 p-1">
+        <button
+          type="button"
+          onClick={() => setPayMode("solo")}
+          className={`rounded-full px-4 py-2 text-sm font-semibold ${
+            payMode === "solo"
+              ? "bg-accent-gradient text-white shadow-accent"
+              : "text-wtva-muted"
+          }`}
+        >
+          Pay myself
+        </button>
+        <button
+          type="button"
+          onClick={() => setPayMode("split")}
+          className={`rounded-full px-4 py-2 text-sm font-semibold ${
+            payMode === "split"
+              ? "bg-accent-gradient text-white shadow-accent"
+              : "text-wtva-muted"
+          }`}
+        >
+          Split with friends
+        </button>
+      </div>
+
       {!hidePartySelect && (
         <label className="block text-sm">
           <span className="font-medium">Party size</span>
@@ -180,39 +220,55 @@ export function NightPackageCheckoutForm({
         </label>
       )}
 
-      {breakdown && (
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-wtva-muted">Subtotal</span>
-            <span className="font-semibold tabular-nums">
-              {money(breakdown.subtotal)}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-wtva-muted">Fees</span>
-            <span className="font-semibold tabular-nums">
-              {money(breakdown.serviceFee)}
-            </span>
-          </div>
-          <div className="flex justify-between border-t border-wtva-dark-300 pt-2 text-base">
-            <span className="font-bold">Total</span>
-            <span className="font-bold tabular-nums">{money(breakdown.amount)}</span>
-          </div>
-        </div>
-      )}
+      {payMode === "split" ? (
+        <VibeSplitCheckout
+          packageId={packageId}
+          publishableKey={publishableKey}
+          partySize={partySize}
+          stopOfferIds={stopOfferIds}
+          startsOn={startsOn}
+        />
+      ) : (
+        <>
+          {breakdown && (
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-wtva-muted">Subtotal</span>
+                <span className="font-semibold tabular-nums">
+                  {money(breakdown.subtotal)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-wtva-muted">Fees</span>
+                <span className="font-semibold tabular-nums">
+                  {money(breakdown.serviceFee)}
+                </span>
+              </div>
+              <div className="flex justify-between border-t border-wtva-dark-300 pt-2 text-base">
+                <span className="font-bold">Total</span>
+                <span className="font-bold tabular-nums">
+                  {money(breakdown.amount)}
+                </span>
+              </div>
+            </div>
+          )}
 
-      {loadError && <p className="text-sm text-red-400">{loadError}</p>}
-      {loadingIntent && <p className="text-sm text-wtva-muted">Preparing checkout…</p>}
+          {loadError && <p className="text-sm text-red-400">{loadError}</p>}
+          {loadingIntent && (
+            <p className="text-sm text-wtva-muted">Preparing checkout…</p>
+          )}
 
-      {clientSecret && (
-        <Elements stripe={stripePromise} options={{ clientSecret }}>
-          <CheckoutForm
-            packageId={packageId}
-            partySize={partySize}
-            stopOfferIds={stopOfferIds}
-            startsOn={startsOn}
-          />
-        </Elements>
+          {clientSecret && (
+            <Elements stripe={stripePromise} options={{ clientSecret }}>
+              <CheckoutForm
+                packageId={packageId}
+                partySize={partySize}
+                stopOfferIds={stopOfferIds}
+                startsOn={startsOn}
+              />
+            </Elements>
+          )}
+        </>
       )}
     </div>
   );

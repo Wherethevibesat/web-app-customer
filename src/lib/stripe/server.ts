@@ -25,7 +25,9 @@ export async function getPublishableKey(): Promise<string | null> {
     .select("publishable_key")
     .eq("id", 1)
     .maybeSingle();
-  return data?.publishable_key ?? process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? null;
+  const fromDb = data?.publishable_key?.trim() || null;
+  const fromEnv = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim() || null;
+  return fromDb ?? fromEnv;
 }
 
 export async function getVipPackage(packageId: string) {
@@ -379,7 +381,7 @@ export async function recordNightPackageOrder(params: {
     throw orderError;
   }
 
-  // Guest paid service fee on top; venues settle the full stop line total later.
+  // Guest paid service fee on top; venue line totals are Transferred after insert.
   const stopRows = stops.map((stop) => {
     const lineTotal = stop.price_cents * params.partySize;
     return {
@@ -395,6 +397,7 @@ export async function recordNightPackageOrder(params: {
       venue_payout_cents: lineTotal,
       scheduled_label: stop.scheduled_label,
       status: "confirmed",
+      payout_status: "pending",
     };
   });
 
@@ -631,6 +634,23 @@ export async function fulfillStripePaymentIntent(
 }> {
   const type = intent.metadata.type;
 
+  if (type === "vibe_payment_share") {
+    const userId = intent.metadata.user_id;
+    if (!userId) throw new Error("Share payment metadata is incomplete.");
+    if (intent.status !== "succeeded") {
+      return { kind: "ignored", updated: false };
+    }
+    const { confirmSharePayment } = await import("@/lib/stripe/vibe-split");
+    const result = await confirmSharePayment({
+      paymentIntentId: intent.id,
+      userId,
+    });
+    return {
+      kind: "night_package_order",
+      updated: result.status === "group_paid",
+    };
+  }
+
   if (type === "night_package_order" || intent.metadata.night_package_id) {
     const packageId = intent.metadata.night_package_id;
     const userId = intent.metadata.user_id;
@@ -652,6 +672,14 @@ export async function fulfillStripePaymentIntent(
     });
     if (result.created) {
       await recordNightPackagePlatformCommission(intent);
+    }
+    if (result.orderId && intent.status === "succeeded") {
+      const { finalizeNightPackageMarketplace } = await import(
+        "@/lib/stripe/vibe-marketplace"
+      );
+      void finalizeNightPackageMarketplace(result.orderId).catch((err) =>
+        console.error("[vibe] marketplace finalize failed:", err),
+      );
     }
     return { kind: "night_package_order", updated: result.created };
   }
