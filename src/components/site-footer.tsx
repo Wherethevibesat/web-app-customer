@@ -23,7 +23,7 @@ export function SiteFooter() {
             <ul className="mt-3 space-y-2 text-sm text-wtva-muted">
               <li><Link href="/events" className="hover:text-foreground">Events</Link></li>
               <li><Link href="/venues" className="hover:text-foreground">Venues</Link></li>
-              <li><Link href="/packages" className="hover:text-foreground">Build Your Night</Link></li>
+              <li><Link href="/packages" className="hover:text-foreground">Curated Vibes</Link></li>
               <li><Link href="/map" className="hover:text-foreground">Map & areas</Link></li>
               <li><Link href="/search" className="hover:text-foreground">Search</Link></li>
             </ul>

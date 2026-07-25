@@ -4,6 +4,7 @@ import { PageShell } from "@/components/page-shell";
 import { NightPackageItinerary } from "@/components/night-package-itinerary";
 import { createClient } from "@/lib/supabase/server";
 import { formatPrice } from "@/lib/format";
+import { vibeCopy } from "@/lib/vibe-copy";
 
 export default async function NightPackageOrdersPage() {
   const supabase = await createClient();
@@ -16,7 +17,7 @@ export default async function NightPackageOrdersPage() {
     .from("night_package_orders")
     .select(
       `
-      id, confirmation_code, party_size, total_cents, status, paid_at, created_at,
+      id, confirmation_code, party_size, starts_on, total_cents, status, paid_at, created_at,
       package:night_packages(id, title, slug),
       stops:night_package_order_stops(
         id, title, venue_id, scheduled_label, redemption_code, status, sort_order,
@@ -32,15 +33,15 @@ export default async function NightPackageOrdersPage() {
 
   return (
     <PageShell
-      title="Your nights"
+      title={vibeCopy.myPlans}
       subtitle="Itinerary, confirmation, and per-stop codes."
       width="narrow"
     >
       {rows.length === 0 ? (
         <p className="text-wtva-muted">
-          No packages yet.{" "}
+          No plans yet.{" "}
           <Link href="/packages" className="underline text-foreground">
-            Browse Build Your Night
+            Browse curated vibes
           </Link>
         </p>
       ) : (
@@ -80,9 +81,10 @@ export default async function NightPackageOrdersPage() {
               <li key={order.id}>
                 <NightPackageItinerary
                   confirmationCode={order.confirmation_code}
-                  packageTitle={pkgRow?.title ?? "Night package"}
+                  packageTitle={pkgRow?.title ?? "Your vibe"}
                   partySize={order.party_size}
                   totalCents={order.total_cents}
+                  startsOn={order.starts_on as string | null}
                   stops={stops}
                 />
                 <p className="mt-2 text-right text-xs text-wtva-muted capitalize">
@@ -102,7 +104,7 @@ export default async function NightPackageOrdersPage() {
         href="/packages"
         className="mt-8 inline-block text-sm text-wtva-muted underline hover:text-foreground"
       >
-        ← Browse packages
+        ← Browse curated vibes
       </Link>
     </PageShell>
   );

@@ -302,6 +302,7 @@ export async function recordNightPackageOrder(params: {
   paymentIntentId: string;
   status: "paid" | "failed";
   stopOfferIds?: string[];
+  startsOn?: string | null;
   guestName?: string | null;
   guestEmail?: string | null;
 }): Promise<{ orderId: string | null; created: boolean }> {
@@ -352,6 +353,7 @@ export async function recordNightPackageOrder(params: {
       package_id: params.packageId,
       user_id: params.userId,
       party_size: params.partySize,
+      starts_on: params.startsOn ?? null,
       subtotal_cents: params.subtotalCents,
       commission_cents: params.commissionCents,
       total_cents: params.totalCents,
@@ -535,6 +537,7 @@ export async function handlePaymentIntentFailure(intent: Stripe.PaymentIntent) {
         totalCents: intent.amount,
         paymentIntentId: intent.id,
         status: "failed",
+        startsOn: intent.metadata.starts_on || null,
       });
     }
     return;
@@ -645,6 +648,7 @@ export async function fulfillStripePaymentIntent(
       paymentIntentId: intent.id,
       status: intent.status === "succeeded" ? "paid" : "failed",
       stopOfferIds: parseStopOfferIdsFromMetadata(intent.metadata.stop_offer_ids),
+      startsOn: intent.metadata.starts_on || null,
     });
     if (result.created) {
       await recordNightPackagePlatformCommission(intent);

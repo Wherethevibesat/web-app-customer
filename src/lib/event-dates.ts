@@ -35,6 +35,23 @@ export function formatEventDateLabel(isoDate: EventDateIso): string {
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
+/** e.g. "Sat, Jul 26" for vibe booking summaries. */
+export function formatVibeStartLabel(isoDate: EventDateIso): string {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/** True if ISO date is today or later (local). */
+export function isIsoDateOnOrAfterToday(isoDate: string): boolean {
+  if (!ISO_DATE_RE.test(isoDate)) return false;
+  return isoDate >= toLocalIsoDate(new Date());
+}
+
 export function startOfLocalDay(date: Date): Date {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }

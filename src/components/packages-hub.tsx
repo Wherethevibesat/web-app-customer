@@ -3,31 +3,54 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
-import { formatPrice } from "@/lib/format";
+import { ArrowRight } from "lucide-react";
+import { buttonClass } from "@/lib/button";
 import type { PackageCard } from "@/lib/data/night-packages-shared";
+import { slotTypeLabel } from "@/lib/data/night-packages-shared";
+import { vibeCopy } from "@/lib/vibe-copy";
 
 export function PackagesHub({
   packages,
   hasOrders,
+  vibeFilter,
+  vibeFilterLabel,
+  unfilteredCount,
 }: {
   packages: PackageCard[];
   hasOrders: boolean;
+  vibeFilter?: string | null;
+  vibeFilterLabel?: string | null;
+  unfilteredCount?: number;
 }) {
-  const [tab, setTab] = useState<"templates" | "plans">("templates");
+  const [tab, setTab] = useState<"vibes" | "plans">(hasOrders ? "vibes" : "vibes");
 
   return (
     <div>
+      {vibeFilterLabel && (
+        <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
+          <span className="rounded-full bg-accent/10 px-3 py-1 font-semibold text-accent">
+            {vibeFilterLabel}
+          </span>
+          <Link
+            href="/packages"
+            className="font-semibold text-wtva-muted hover:text-foreground"
+          >
+            Clear filter
+            {unfilteredCount != null ? ` · see all ${unfilteredCount}` : ""}
+          </Link>
+        </div>
+      )}
       <div className="mb-6 inline-flex gap-1 rounded-full border border-wtva-dark-300 bg-wtva-card p-1">
         <button
           type="button"
-          onClick={() => setTab("templates")}
+          onClick={() => setTab("vibes")}
           className={`rounded-full px-4 py-2 text-sm font-semibold ${
-            tab === "templates"
+            tab === "vibes"
               ? "bg-accent-gradient text-white shadow-accent"
               : "text-wtva-muted hover:text-foreground"
           }`}
         >
-          Templates
+          {vibeCopy.vibesTab}
         </button>
         <button
           type="button"
@@ -38,13 +61,13 @@ export function PackagesHub({
               : "text-wtva-muted hover:text-foreground"
           }`}
         >
-          My Plans
+          {vibeCopy.myPlans}
         </button>
       </div>
 
       {tab === "plans" ? (
         <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-6">
-          <p className="font-semibold">Your booked nights</p>
+          <p className="font-semibold">{vibeCopy.myPlans}</p>
           <p className="mt-1 text-sm text-wtva-muted">
             Confirmation codes and per-stop redemption live here after checkout.
           </p>
@@ -52,56 +75,87 @@ export function PackagesHub({
             href="/packages/orders"
             className="mt-4 inline-block text-sm font-semibold text-accent hover:opacity-80"
           >
-            Open my nights →
+            Open {vibeCopy.myPlans.toLowerCase()} →
           </Link>
         </div>
       ) : packages.length === 0 ? (
-        <p className="text-wtva-muted">
-          No night packages are published yet. Check back soon, or ask Concierge for a custom plan.
-        </p>
+        <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-6">
+          <p className="text-wtva-muted">
+            {vibeFilter
+              ? `No curated vibes for ${vibeFilterLabel ?? "this occasion"} yet. Check back as venues add experiences.`
+              : vibeCopy.emptyBrowse}
+          </p>
+          {vibeFilter && (
+            <Link
+              href="/packages"
+              className="mt-4 inline-block text-sm font-semibold text-accent"
+            >
+              Browse all vibes →
+            </Link>
+          )}
+        </div>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2">
-          {packages.map((pkg) => (
-            <li key={pkg.id}>
-              <Link
-                href={`/packages/${pkg.slug || pkg.id}`}
-                className="group flex h-full flex-col overflow-hidden rounded-2xl border border-wtva-dark-300 bg-wtva-card shadow-card transition hover:-translate-y-0.5 hover:border-accent/40 hover:shadow-card-hover"
-              >
-                <div className="relative aspect-[16/9] bg-wtva-dark-200">
-                  {pkg.image_url ? (
-                    <Image
-                      src={pkg.image_url}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 640px) 100vw, 50vw"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="absolute inset-0 bg-accent-gradient opacity-80" />
-                  )}
-                </div>
-                <div className="flex flex-1 flex-col p-5">
-                  {pkg.is_featured && (
-                    <span className="text-xs font-semibold uppercase tracking-wide text-accent">
-                      Featured
-                    </span>
-                  )}
-                  <h2 className="mt-1 text-lg font-bold group-hover:text-accent">{pkg.title}</h2>
-                  {pkg.subtitle && (
-                    <p className="mt-1 text-sm text-wtva-muted line-clamp-2">{pkg.subtitle}</p>
-                  )}
-                  {pkg.stopChain && (
-                    <p className="mt-3 text-xs text-wtva-muted line-clamp-2">{pkg.stopChain}</p>
-                  )}
-                  <p className="mt-auto pt-4 text-base font-bold">
-                    From {formatPrice(pkg.subtotal_cents / 100)}
-                    <span className="ml-1 text-sm font-normal text-wtva-muted">/ person</span>
-                  </p>
-                </div>
-              </Link>
-            </li>
-          ))}
+        <ul className="grid gap-6 sm:grid-cols-2">
+          {packages.map((pkg) => {
+            const tags =
+              pkg.vibe_tags.length > 0
+                ? pkg.vibe_tags
+                : pkg.stopChain
+                    .split(" → ")
+                    .filter(Boolean)
+                    .map((s) => slotTypeLabel(s.toLowerCase().replace(/ /g, "_")));
+            return (
+              <li key={pkg.id}>
+                <article className="flex h-full flex-col overflow-hidden rounded-3xl border border-wtva-dark-300 bg-wtva-card shadow-card">
+                  <div className="relative aspect-[16/10] bg-wtva-dark-200">
+                    {pkg.image_url ? (
+                      <Image
+                        src={pkg.image_url}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 100vw, 50vw"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="absolute inset-0 bg-accent-gradient opacity-85" />
+                    )}
+                    {pkg.is_featured && (
+                      <span className="absolute left-3 top-3 rounded-full bg-accent-gradient px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-white shadow-accent">
+                        {vibeCopy.featuredBadge}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-1 flex-col p-5 md:p-6">
+                    <h2 className="text-xl font-bold tracking-tight">{pkg.title}</h2>
+                    {pkg.tagline && (
+                      <p className="mt-2 text-sm leading-relaxed text-wtva-muted line-clamp-3">
+                        {pkg.tagline}
+                      </p>
+                    )}
+                    {tags.length > 0 && (
+                      <ul className="mt-4 flex flex-wrap gap-2">
+                        {tags.slice(0, 5).map((tag) => (
+                          <li
+                            key={tag}
+                            className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent"
+                          >
+                            {tag}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <Link
+                      href={`/packages/${pkg.slug || pkg.id}`}
+                      className={buttonClass("primary", "md", "mt-auto pt-5 w-full")}
+                    >
+                      {vibeCopy.viewVibe} <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+                </article>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

@@ -94,7 +94,14 @@ export function BrowseFiltersBar({
             <button type="submit" className={buttonClass("primary", "md", "shrink-0")}>
               Search
             </button>
-            {showDatePicker && <BrowseDatePicker basePath={basePath} filters={filters} />}
+            {showDatePicker && (
+              <div className="flex items-center gap-2">
+                <span className="hidden text-xs font-semibold uppercase tracking-wide text-wtva-muted sm:inline">
+                  Date
+                </span>
+                <BrowseDatePicker basePath={basePath} filters={filters} />
+              </div>
+            )}
             {showFilterButton && (
               <button
                 type="button"
@@ -118,9 +125,16 @@ export function BrowseFiltersBar({
         </form>
       )}
 
-      {!showSearch && showDatePicker && (
-        <div className="flex flex-wrap gap-2">
-          <BrowseDatePicker basePath={basePath} filters={filters} />
+      {!showSearch && (showDatePicker || showFilterButton) && (
+        <div className="flex flex-wrap items-center gap-2">
+          {showDatePicker && (
+            <>
+              <span className="text-xs font-semibold uppercase tracking-wide text-wtva-muted">
+                Date
+              </span>
+              <BrowseDatePicker basePath={basePath} filters={filters} />
+            </>
+          )}
           {showFilterButton && (
             <button
               type="button"

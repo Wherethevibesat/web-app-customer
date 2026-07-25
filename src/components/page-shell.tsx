@@ -32,11 +32,21 @@ export function PageShell({
           ← {backLabel}
         </Link>
       )}
-      <header className={backHref ? "mt-4" : ""}>
-        <h1 className="text-3xl font-bold tracking-tight md:text-4xl">{title}</h1>
-        {subtitle && <p className="mt-2 max-w-2xl text-wtva-muted">{subtitle}</p>}
-      </header>
-      <div className="mt-8">{children}</div>
+      {(title || subtitle) && (
+        <header className={backHref ? "mt-4" : ""}>
+          {title ? (
+            <h1 className="text-3xl font-bold tracking-tight md:text-4xl">{title}</h1>
+          ) : null}
+          {subtitle && (
+            <p className={`max-w-2xl text-wtva-muted ${title ? "mt-2" : ""}`}>
+              {subtitle}
+            </p>
+          )}
+        </header>
+      )}
+      <div className={title || subtitle ? "mt-8" : backHref ? "mt-6" : ""}>
+        {children}
+      </div>
     </div>
   );
 }

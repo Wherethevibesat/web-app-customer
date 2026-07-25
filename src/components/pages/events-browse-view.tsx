@@ -99,7 +99,13 @@ export async function EventsBrowseView({
         </div>
       ) : (
         <p className="mt-12 rounded-xl border border-dashed border-wtva-dark-300 py-20 text-center text-wtva-muted">
-          No events match this filter.{" "}
+          {filters.date ? (
+            <>
+              No events on {formatEventDateLabel(filters.date)} — try another day.{" "}
+            </>
+          ) : (
+            <>No events match this filter. </>
+          )}
           <Link href={basePath} className="underline">
             View all events
           </Link>

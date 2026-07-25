@@ -8,6 +8,7 @@ import {
   type ApprovedStopOffer,
 } from "@/lib/data/night-packages";
 import { getNightPackageCommissionPct } from "@/lib/stripe/server";
+import { vibeCopy } from "@/lib/vibe-copy";
 
 export default async function PackagePlanPage({
   params,
@@ -22,27 +23,35 @@ export default async function PackagePlanPage({
   ]);
   if (!pkg) notFound();
 
-  const initialStops: ApprovedStopOffer[] = (pkg.stops ?? [])
-    .map((s) => s.stop_offer)
-    .filter((o): o is NonNullable<typeof o> => Boolean(o))
-    .map((o) => ({
-      id: o.id,
-      title: o.title,
-      description: o.description,
-      slot_type: o.slot_type,
-      price_cents: o.price_cents,
-      inclusions: o.inclusions ?? [],
-      arrival_window: o.arrival_window,
-      image_url: o.image_url,
-      venue: o.venue,
-    }));
+  const initialStops = (pkg.stops ?? [])
+    .map((s) => {
+      const o = s.stop_offer;
+      if (!o) return null;
+      return {
+        id: o.id,
+        title: o.title,
+        description: o.description,
+        slot_type: o.slot_type,
+        price_cents: o.price_cents,
+        inclusions: o.inclusions ?? [],
+        arrival_window: o.arrival_window,
+        image_url: o.image_url,
+        why_picked: o.why_picked,
+        duration_label: o.duration_label,
+        dress_code: o.dress_code,
+        crowd_label: o.crowd_label,
+        venue: o.venue,
+        scheduled_label: s.scheduled_label,
+      };
+    })
+    .filter((o): o is NonNullable<typeof o> => Boolean(o));
 
   if (initialStops.length === 0) {
     return (
-      <PageShell title="Customize plan">
-        <p className="text-wtva-muted">This template has no available stops yet.</p>
+      <PageShell title={vibeCopy.buildYourVibe}>
+        <p className="text-wtva-muted">This vibe has no available experiences yet.</p>
         <Link href="/packages" className="mt-4 inline-block underline">
-          Browse templates
+          Browse curated vibes
         </Link>
       </PageShell>
     );
@@ -50,11 +59,10 @@ export default async function PackagePlanPage({
 
   return (
     <PageShell
-      title="Customize your plan"
-      subtitle="Swap or add approved experiences, then checkout once for the whole night."
+      title=""
       width="narrow"
       backHref={`/packages/${pkg.slug || pkg.id}`}
-      backLabel="Template"
+      backLabel="Back"
     >
       <NightPackagePlanEditor
         packageId={pkg.id}

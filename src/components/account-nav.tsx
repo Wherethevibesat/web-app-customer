@@ -8,7 +8,7 @@ const links = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/profile", label: "Account" },
   { href: "/profile/favorites", label: "Favorites" },
-  { href: "/packages/orders", label: "My nights" },
+  { href: "/packages/orders", label: "My Plans" },
   { href: "/check-in", label: "Check in" },
   { href: "/messages", label: "Messages" },
   { href: "/settings", label: "Settings" },

@@ -9,6 +9,7 @@ import {
   resolveNeighborhoodName,
 } from "@/lib/data/neighborhoods";
 import { parseBrowseFilters } from "@/lib/filter-url";
+import { formatEventDateLabel } from "@/lib/event-dates";
 import { listVenues } from "@/lib/data/venues";
 
 type SearchBrowseViewProps = {
@@ -97,7 +98,11 @@ export async function SearchBrowseView({
                 ))}
               </div>
             ) : (
-              <p className="mt-4 text-sm text-wtva-muted">No events matched.</p>
+              <p className="mt-4 text-sm text-wtva-muted">
+                {filters.date
+                  ? `No events on ${formatEventDateLabel(filters.date)} — try another day.`
+                  : "No events matched."}
+              </p>
             )}
           </section>
 

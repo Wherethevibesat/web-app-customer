@@ -1,4 +1,8 @@
 import { formatPrice } from "@/lib/format";
+import {
+  formatVibeStartLabel,
+  type EventDateIso,
+} from "@/lib/event-dates";
 
 export type ItineraryStop = {
   id: string;
@@ -17,24 +21,36 @@ export function NightPackageItinerary({
   partySize,
   totalCents,
   stops,
+  startsOn,
 }: {
   confirmationCode: string;
   packageTitle: string;
   partySize: number;
   totalCents: number;
   stops: ItineraryStop[];
+  startsOn?: string | null;
 }) {
   const ordered = [...stops].sort((a, b) => a.sort_order - b.sort_order);
+  const startLabel =
+    startsOn && /^\d{4}-\d{2}-\d{2}$/.test(startsOn)
+      ? formatVibeStartLabel(startsOn as EventDateIso)
+      : null;
 
   return (
     <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-5 md:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-wide text-accent">
-            Your night
+            Your vibe
           </p>
           <h2 className="mt-1 text-xl font-bold">{packageTitle}</h2>
           <p className="mt-1 text-sm text-wtva-muted">
+            {startLabel ? (
+              <>
+                Starting <span className="font-semibold text-foreground">{startLabel}</span>
+                {" · "}
+              </>
+            ) : null}
             Confirmation{" "}
             <span className="font-mono font-semibold text-foreground">
               {confirmationCode}

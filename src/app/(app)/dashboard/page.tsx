@@ -33,7 +33,7 @@ export default async function DashboardPage() {
         .from("night_package_orders")
         .select(
           `
-          id, confirmation_code, party_size, total_cents, status, paid_at,
+          id, confirmation_code, party_size, starts_on, total_cents, status, paid_at,
           package:night_packages(id, title, slug),
           stops:night_package_order_stops(
             id, title, scheduled_label, redemption_code, status, sort_order,
@@ -67,8 +67,8 @@ export default async function DashboardPage() {
     },
     {
       href: "/packages",
-      label: "Build Your Night",
-      desc: "Plan & book a multi-stop flow",
+      label: "Build My Vibe",
+      desc: "Browse curated vibes & customize",
       icon: MoonStar,
     },
     {
@@ -129,7 +129,7 @@ export default async function DashboardPage() {
       <div className="mt-10 grid gap-8 lg:grid-cols-5">
         <section className="lg:col-span-3 space-y-4">
           <div className="flex items-end justify-between gap-3">
-            <h2 className="text-lg font-bold">Your nights</h2>
+            <h2 className="text-lg font-bold">My Plans</h2>
             <Link href="/packages/orders" className="text-sm font-semibold text-accent">
               View all →
             </Link>
@@ -168,21 +168,22 @@ export default async function DashboardPage() {
               return (
                 <NightPackageItinerary
                   confirmationCode={latestOrder.confirmation_code}
-                  packageTitle={pkgRow?.title ?? "Night package"}
+                  packageTitle={pkgRow?.title ?? "Your vibe"}
                   partySize={latestOrder.party_size}
                   totalCents={latestOrder.total_cents}
+                  startsOn={latestOrder.starts_on as string | null}
                   stops={stops}
                 />
               );
             })()
           ) : (
             <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-6">
-              <p className="font-semibold">No nights booked yet</p>
+              <p className="font-semibold">No plans booked yet</p>
               <p className="mt-1 text-sm text-wtva-muted">
-                Pick a template, customize stops, and pay once.
+                Pick a curated vibe, customize experiences, and pay once.
               </p>
               <Link href="/packages" className={buttonClass("primary", "md", "mt-4")}>
-                Plan my night
+                Build My Vibe
               </Link>
             </div>
           )}

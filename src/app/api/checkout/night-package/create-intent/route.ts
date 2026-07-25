@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth/require-user";
+import { isIsoDateOnOrAfterToday } from "@/lib/event-dates";
 import {
   getNightPackageCommissionPct,
   getPublishedNightPackageForCheckout,
@@ -13,6 +14,7 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const packageId = body.packageId as string | undefined;
+  const startsOn = String(body.startsOn ?? "").trim();
   const partySize = Math.max(1, Math.min(50, Number(body.partySize) || 1));
   const requestedStopIds = Array.isArray(body.stopOfferIds)
     ? (body.stopOfferIds as unknown[])
@@ -23,6 +25,13 @@ export async function POST(request: Request) {
 
   if (!packageId) {
     return NextResponse.json({ error: "packageId required" }, { status: 400 });
+  }
+
+  if (!isIsoDateOnOrAfterToday(startsOn)) {
+    return NextResponse.json(
+      { error: "Pick a start date (today or later)" },
+      { status: 400 },
+    );
   }
 
   try {
@@ -74,6 +83,7 @@ export async function POST(request: Request) {
         night_package_id: packageId,
         user_id: user.id,
         party_size: String(partySize),
+        starts_on: startsOn,
         subtotal_cents: String(subtotalCents),
         commission_cents: String(commissionCents),
         commission_pct: String(commissionPct),

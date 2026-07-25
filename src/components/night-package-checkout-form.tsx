@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { buttonClass } from "@/lib/button";
+import { vibeCopy } from "@/lib/vibe-copy";
 import {
   Elements,
   PaymentElement,
@@ -13,14 +14,14 @@ import {
 
 function CheckoutForm({
   packageId,
-  packageName,
   partySize,
   stopOfferIds,
+  startsOn,
 }: {
   packageId: string;
-  packageName: string;
   partySize: number;
   stopOfferIds: string[];
+  startsOn: string;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -38,6 +39,7 @@ function CheckoutForm({
       done: "1",
       party: String(partySize),
       stops: stopOfferIds.join(","),
+      startsOn,
     });
 
     const { error: submitError, paymentIntent } = await stripe.confirmPayment({
@@ -61,7 +63,9 @@ function CheckoutForm({
         body: JSON.stringify({ paymentIntentId: paymentIntent.id }),
       });
       if (paymentIntent.status === "succeeded") {
-        router.push(`/packages/${packageId}/checkout?success=1&party=${partySize}`);
+        router.push(
+          `/packages/${packageId}/checkout?success=1&party=${partySize}&startsOn=${startsOn}`,
+        );
         router.refresh();
         return;
       }
@@ -71,11 +75,6 @@ function CheckoutForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <p className="text-sm text-wtva-muted">
-        Completing purchase for <strong className="text-foreground">{packageName}</strong>
-        {partySize > 1 ? ` · ${partySize} guests` : ""}
-        {stopOfferIds.length ? ` · ${stopOfferIds.length} stops` : ""}
-      </p>
       <PaymentElement />
       {error && <p className="text-sm text-red-400">{error}</p>}
       <button
@@ -83,7 +82,7 @@ function CheckoutForm({
         disabled={!stripe || loading}
         className={buttonClass("primary", "lg", "w-full")}
       >
-        {loading ? "Processing…" : "Pay now"}
+        {loading ? "Processing…" : vibeCopy.bookMyVibe}
       </button>
     </form>
   );
@@ -97,16 +96,19 @@ type Props = {
   partySizeMin: number;
   partySizeMax: number;
   stopOfferIds: string[];
+  startsOn: string;
+  hidePartySelect?: boolean;
 };
 
 export function NightPackageCheckoutForm({
   packageId,
-  packageName,
   publishableKey,
   partySize: initialPartySize,
   partySizeMin,
   partySizeMax,
   stopOfferIds,
+  startsOn,
+  hidePartySelect = false,
 }: Props) {
   const [partySize, setPartySize] = useState(initialPartySize);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -131,7 +133,7 @@ export function NightPackageCheckoutForm({
       const res = await fetch("/api/checkout/night-package/create-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packageId, partySize, stopOfferIds }),
+        body: JSON.stringify({ packageId, partySize, stopOfferIds, startsOn }),
       });
       const data = await res.json();
       if (cancelled) return;
@@ -152,45 +154,49 @@ export function NightPackageCheckoutForm({
     return () => {
       cancelled = true;
     };
-  }, [packageId, partySize, stopOfferIds.join(",")]);
+  }, [packageId, partySize, startsOn, stopOfferIds.join(",")]);
 
   const stripePromise = loadStripe(publishableKey);
 
   return (
     <div className="space-y-6">
-      <label className="block text-sm">
-        <span className="font-medium">Party size</span>
-        <select
-          className="mt-1 w-full rounded-lg border border-wtva-dark-300 bg-wtva-card px-3 py-2"
-          value={partySize}
-          onChange={(e) => setPartySize(Number(e.target.value))}
-        >
-          {Array.from(
-            { length: partySizeMax - partySizeMin + 1 },
-            (_, i) => partySizeMin + i,
-          ).map((n) => (
-            <option key={n} value={n}>
-              {n} {n === 1 ? "guest" : "guests"}
-            </option>
-          ))}
-        </select>
-      </label>
+      {!hidePartySelect && (
+        <label className="block text-sm">
+          <span className="font-medium">Party size</span>
+          <select
+            className="mt-1 w-full rounded-lg border border-wtva-dark-300 bg-wtva-card px-3 py-2"
+            value={partySize}
+            onChange={(e) => setPartySize(Number(e.target.value))}
+          >
+            {Array.from(
+              { length: partySizeMax - partySizeMin + 1 },
+              (_, i) => partySizeMin + i,
+            ).map((n) => (
+              <option key={n} value={n}>
+                {n} {n === 1 ? "guest" : "guests"}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
 
       {breakdown && (
-        <div className="rounded-xl border border-wtva-dark-300 bg-wtva-dark-400/40 p-4 text-sm space-y-2">
+        <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-wtva-muted">Subtotal</span>
-            <span className="font-semibold">{money(breakdown.subtotal)}</span>
+            <span className="font-semibold tabular-nums">
+              {money(breakdown.subtotal)}
+            </span>
           </div>
           <div className="flex justify-between">
-            <span className="text-wtva-muted">
-              Service fee ({breakdown.commissionPct}%)
+            <span className="text-wtva-muted">Fees</span>
+            <span className="font-semibold tabular-nums">
+              {money(breakdown.serviceFee)}
             </span>
-            <span className="font-semibold">{money(breakdown.serviceFee)}</span>
           </div>
           <div className="flex justify-between border-t border-wtva-dark-300 pt-2 text-base">
             <span className="font-bold">Total</span>
-            <span className="font-bold">{money(breakdown.amount)}</span>
+            <span className="font-bold tabular-nums">{money(breakdown.amount)}</span>
           </div>
         </div>
       )}
@@ -202,9 +208,9 @@ export function NightPackageCheckoutForm({
         <Elements stripe={stripePromise} options={{ clientSecret }}>
           <CheckoutForm
             packageId={packageId}
-            packageName={packageName}
             partySize={partySize}
             stopOfferIds={stopOfferIds}
+            startsOn={startsOn}
           />
         </Elements>
       )}
