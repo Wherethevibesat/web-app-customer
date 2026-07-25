@@ -90,9 +90,11 @@ export async function POST(request: Request) {
     const stopOfferIdsMeta = stops.map((s) => s.stop_offer_id).join(",");
 
     const stripe = getStripe();
+    // Card-only avoids Apple Pay / Link hangs in flutter_stripe on iOS Simulator.
     const intent = await stripe.paymentIntents.create({
       amount: totalCents,
       currency: "usd",
+      payment_method_types: ["card"],
       metadata: {
         type: "night_package_order",
         night_package_id: packageId,
@@ -104,7 +106,6 @@ export async function POST(request: Request) {
         commission_pct: String(commissionPct),
         stop_offer_ids: stopOfferIdsMeta,
       },
-      automatic_payment_methods: { enabled: true },
     });
 
     return NextResponse.json({

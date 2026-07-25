@@ -297,9 +297,12 @@ export async function createSharePaymentIntent(params: {
   }
 
   const stripe = getStripe();
+  // Card-only: Apple Pay / Link via automatic_payment_methods can hang
+  // flutter_stripe PaymentSheet on iOS Simulator.
   const intent = await stripe.paymentIntents.create({
     amount: Number(share.amount_cents),
     currency: "usd",
+    payment_method_types: ["card"],
     metadata: {
       type: "vibe_payment_share",
       group_id: params.groupId,
@@ -307,7 +310,6 @@ export async function createSharePaymentIntent(params: {
       user_id: params.userId,
       night_package_id: group.package_id as string,
     },
-    automatic_payment_methods: { enabled: true },
   });
 
   await admin
