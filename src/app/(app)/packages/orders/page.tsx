@@ -2,7 +2,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PageShell } from "@/components/page-shell";
 import { NightPackageItinerary } from "@/components/night-package-itinerary";
+import { VibeSplitInProgressList } from "@/components/vibe-split-in-progress";
 import { createClient } from "@/lib/supabase/server";
+import { listOpenVibeSplits } from "@/lib/data/vibe-open-splits";
 import { formatPrice } from "@/lib/format";
 import { vibeCopy } from "@/lib/vibe-copy";
 
@@ -13,10 +15,11 @@ export default async function NightPackageOrdersPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login?next=/packages/orders");
 
-  const { data: orders } = await supabase
-    .from("night_package_orders")
-    .select(
-      `
+  const [{ data: orders }, openSplits] = await Promise.all([
+    supabase
+      .from("night_package_orders")
+      .select(
+        `
       id, confirmation_code, party_size, starts_on, total_cents, status, paid_at, created_at,
       package:night_packages(id, title, slug),
       stops:night_package_order_stops(
@@ -25,27 +28,45 @@ export default async function NightPackageOrdersPage() {
         venue:venues(name)
       )
     `,
-    )
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
+      )
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+    listOpenVibeSplits(supabase, user.id),
+  ]);
 
   const rows = orders ?? [];
+  const empty = rows.length === 0 && openSplits.length === 0;
 
   return (
     <PageShell
       title={vibeCopy.myPlans}
-      subtitle="Itinerary, confirmation, and per-stop codes."
+      subtitle="Finish open splits, then find itineraries and per-stop codes."
       width="narrow"
     >
-      {rows.length === 0 ? (
+      {openSplits.length > 0 && (
+        <section className="mb-8 space-y-3">
+          <h2 className="text-base font-bold">Finish payment</h2>
+          <VibeSplitInProgressList splits={openSplits} />
+        </section>
+      )}
+
+      {empty ? (
         <p className="text-wtva-muted">
           No plans yet.{" "}
           <Link href="/packages" className="underline text-foreground">
             Browse curated vibes
           </Link>
         </p>
+      ) : rows.length === 0 ? (
+        <p className="text-sm text-wtva-muted">
+          Booked vibes will show here once everyone pays.
+        </p>
       ) : (
-        <ul className="space-y-6">
+        <section className="space-y-6">
+          {openSplits.length > 0 && (
+            <h2 className="text-base font-bold">Booked</h2>
+          )}
+          <ul className="space-y-6">
           {rows.map((order) => {
             const pkg = order.package as
               | { id: string; title: string; slug: string | null }
@@ -98,7 +119,8 @@ export default async function NightPackageOrdersPage() {
               </li>
             );
           })}
-        </ul>
+          </ul>
+        </section>
       )}
       <Link
         href="/packages"

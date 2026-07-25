@@ -13,9 +13,11 @@ import {
 import { PageShell } from "@/components/page-shell";
 import { AccountNav } from "@/components/account-nav";
 import { NightPackageItinerary } from "@/components/night-package-itinerary";
+import { VibeSplitInProgressList } from "@/components/vibe-split-in-progress";
 import { buttonClass } from "@/lib/button";
 import { createClient } from "@/lib/supabase/server";
 import { listFavorites } from "@/lib/data/favorites";
+import { listOpenVibeSplits } from "@/lib/data/vibe-open-splits";
 import { formatPrice } from "@/lib/format";
 
 export default async function DashboardPage() {
@@ -25,8 +27,13 @@ export default async function DashboardPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/auth/login?next=/dashboard");
 
-  const [{ data: profile }, favorites, { data: orders }, { data: recentCheckIns }] =
-    await Promise.all([
+  const [
+    { data: profile },
+    favorites,
+    { data: orders },
+    { data: recentCheckIns },
+    openSplits,
+  ] = await Promise.all([
       supabase.from("users").select("name, email").eq("id", user.id).maybeSingle(),
       listFavorites(user.id).catch(() => []),
       supabase
@@ -51,6 +58,7 @@ export default async function DashboardPage() {
         .eq("user_id", user.id)
         .order("checked_in_at", { ascending: false })
         .limit(3),
+      listOpenVibeSplits(supabase, user.id),
     ]);
 
   const firstName =
@@ -134,6 +142,9 @@ export default async function DashboardPage() {
               View all →
             </Link>
           </div>
+          {openSplits.length > 0 && (
+            <VibeSplitInProgressList splits={openSplits.slice(0, 2)} compact />
+          )}
           {latestOrder ? (
             (() => {
               const pkg = latestOrder.package as
@@ -176,7 +187,7 @@ export default async function DashboardPage() {
                 />
               );
             })()
-          ) : (
+          ) : openSplits.length === 0 ? (
             <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-6">
               <p className="font-semibold">No plans booked yet</p>
               <p className="mt-1 text-sm text-wtva-muted">
@@ -186,7 +197,7 @@ export default async function DashboardPage() {
                 Build My Vibe
               </Link>
             </div>
-          )}
+          ) : null}
         </section>
 
         <aside className="lg:col-span-2 space-y-6">
