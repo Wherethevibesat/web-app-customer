@@ -9,6 +9,7 @@ import { HomeHeroSearch } from "@/components/home-hero-search";
 import { HomeDiscoverTabs } from "@/components/home-discover-tabs";
 import { HomeTonightCategories } from "@/components/home-tonight-categories";
 import { HomeBuildYourNight } from "@/components/home-build-your-night";
+import { HomeBuildYourNightCard } from "@/components/home-build-your-night-card";
 import { VenueCard } from "@/components/venue-card";
 import { HeroCitySelect } from "@/components/hero-city-select";
 import { EventInterestForm } from "@/components/event-interest-form";
@@ -45,22 +46,27 @@ export default async function HomePage() {
       <section className="relative min-h-[520px] overflow-hidden border-b border-wtva-dark-300">
         <HeroVideoBackground src={HERO_VIDEO_SRC} poster={HERO_VIDEO_POSTER} />
         <div className="relative mx-auto max-w-7xl px-4 py-16 pb-28 md:pb-16 lg:px-8 lg:py-24">
-          <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-white md:text-5xl lg:text-6xl">
-            Discover where <HeroCitySelect current={DEFAULT_CITY} /> is going{" "}
-            <span className="text-accent-gradient italic">tonight.</span>
-          </h1>
-          <p className="mt-4 max-w-xl text-lg text-white/85">
-            Find events, clubs, VIP experiences, and rides—all in one place.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/discover" className={buttonClass("primary", "lg")}>
-              Explore Tonight <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link href="/for-business" className={buttonClass("onDark", "lg")}>
-              For Business
-            </Link>
+          <div className="flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between lg:gap-12">
+            <div className="min-w-0 flex-1">
+              <h1 className="max-w-3xl text-4xl font-bold leading-tight tracking-tight text-white md:text-5xl lg:text-6xl">
+                Discover where <HeroCitySelect current={DEFAULT_CITY} /> is going{" "}
+                <span className="text-accent-gradient italic">tonight.</span>
+              </h1>
+              <p className="mt-4 max-w-xl text-lg text-white/85">
+                Find events, clubs, VIP experiences, and rides—all in one place.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link href="/discover" className={buttonClass("primary", "lg")}>
+                  Explore Tonight <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link href="/for-business" className={buttonClass("onDark", "lg")}>
+                  For Business
+                </Link>
+              </div>
+              <HomeHeroSearch neighborhoods={neighborhoods} eventTypes={eventTypes} />
+            </div>
+            <HomeBuildYourNightCard />
           </div>
-          <HomeHeroSearch neighborhoods={neighborhoods} eventTypes={eventTypes} />
         </div>
       </section>
 

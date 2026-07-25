@@ -11,7 +11,6 @@ import { buttonClass } from "@/lib/button";
 const NAV = [
   { href: "/discover", label: "Discover" },
   { href: "/packages", label: "Plan" },
-  { href: "/discover/concierge", label: "Concierge" },
   { href: "/discover/events", label: "Events" },
   { href: "/venues", label: "Venues" },
   { href: "/promoters", label: "Promoters" },
@@ -99,12 +98,6 @@ export function SiteHeader({
 
   const authLinks = isSignedIn ? (
     <>
-      <Link
-        href="/check-in"
-        className={buttonClass("secondary", "sm", "hidden sm:inline-flex")}
-      >
-        Check in
-      </Link>
       <div className="relative" ref={accountRef}>
         <button
           type="button"
@@ -299,9 +292,6 @@ export function SiteHeader({
                   </Link>
                   <Link href="/profile" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm">
                     Account
-                  </Link>
-                  <Link href="/check-in" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm">
-                    Check in
                   </Link>
                   <Link href="/settings" onClick={() => setMenuOpen(false)} className="rounded-lg px-3 py-2.5 text-sm">
                     Settings

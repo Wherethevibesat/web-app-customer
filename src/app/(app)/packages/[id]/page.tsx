@@ -8,7 +8,6 @@ import {
   getPublishedNightPackage,
   slotTypeLabel,
 } from "@/lib/data/night-packages";
-import { createClient } from "@/lib/supabase/server";
 
 export default async function PackageDetailPage({
   params,
@@ -22,14 +21,6 @@ export default async function PackageDetailPage({
   const stops = pkg.stops ?? [];
   const perPerson = (pkg.subtotal_cents ?? 0) / 100;
   const planHref = `/packages/${pkg.id}/plan`;
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const bookHref = user
-    ? planHref
-    : `/auth/login?next=${encodeURIComponent(planHref)}`;
 
   return (
     <PageShell title={pkg.title} subtitle={pkg.subtitle || undefined} width="narrow">
@@ -62,7 +53,7 @@ export default async function PackageDetailPage({
             Party size {pkg.party_size_min}–{pkg.party_size_max} · one checkout for the whole night
           </p>
         </div>
-        <Link href={bookHref} className={buttonClass("primary", "lg")}>
+        <Link href={planHref} className={buttonClass("primary", "lg")}>
           Customize & book
         </Link>
       </div>

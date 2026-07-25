@@ -264,7 +264,7 @@ export default async function EventDetailPage({
                     <p className="mt-2 text-sm text-wtva-muted flex-1">{pkg.description}</p>
                   )}
                   <Link
-                    href={user ? `/checkout/${pkg.id}` : `/auth/login?next=/checkout/${pkg.id}`}
+                    href={`/checkout/${pkg.id}`}
                     className={buttonClass("primary", "md", "mt-4 w-full")}
                   >
                     Buy VIP

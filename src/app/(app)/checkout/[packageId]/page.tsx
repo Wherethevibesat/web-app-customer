@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { CheckCircle } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
+import { CheckoutAuthPanel } from "@/components/checkout-auth-panel";
 import { VipCheckoutForm } from "@/components/vip-checkout-form";
 import { createClient } from "@/lib/supabase/server";
 import { getPublishableKey, getVipPackage } from "@/lib/stripe/server";
@@ -22,7 +22,6 @@ export default async function CheckoutPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect(`/auth/login?next=/checkout/${packageId}`);
 
   const pkg = await getVipPackage(packageId);
   if (!pkg) {
@@ -80,12 +79,16 @@ export default async function CheckoutPage({
         <h2 className="text-lg font-bold">{pkg.package_name}</h2>
         <p className="mt-1 text-wtva-muted text-sm">{pkg.description}</p>
         <p className="mt-4 text-xl font-bold">{formatPrice(Number(pkg.price))}</p>
-        <div className="mt-8">
-          <VipCheckoutForm
-            packageId={packageId}
-            packageName={pkg.package_name}
-            publishableKey={publishableKey}
-          />
+        <div className="mt-8 space-y-6">
+          {!user ? (
+            <CheckoutAuthPanel />
+          ) : (
+            <VipCheckoutForm
+              packageId={packageId}
+              packageName={pkg.package_name}
+              publishableKey={publishableKey}
+            />
+          )}
         </div>
       </div>
       {eventRow && (

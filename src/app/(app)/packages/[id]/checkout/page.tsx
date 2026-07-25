@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { CheckCircle } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
+import { CheckoutAuthPanel } from "@/components/checkout-auth-panel";
 import { NightPackageCheckoutForm } from "@/components/night-package-checkout-form";
 import { createClient } from "@/lib/supabase/server";
 import { getPublishableKey } from "@/lib/stripe/server";
@@ -23,13 +23,6 @@ export default async function NightPackageCheckoutPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) {
-    const q = new URLSearchParams();
-    if (party) q.set("party", party);
-    if (stopsParam) q.set("stops", stopsParam);
-    const suffix = q.toString() ? `?${q}` : "";
-    redirect(`/auth/login?next=${encodeURIComponent(`/packages/${id}/checkout${suffix}`)}`);
-  }
 
   const pkg = await getPublishedNightPackage(id).catch(() => null);
   if (!pkg) {
@@ -109,16 +102,20 @@ export default async function NightPackageCheckoutPage({
         <p className="mt-1 text-sm text-wtva-muted">
           {resolvedStops.length} stops · template from {formatPrice(perPerson)} / person
         </p>
-        <div className="mt-8">
-          <NightPackageCheckoutForm
-            packageId={pkg.id}
-            packageName={pkg.title}
-            publishableKey={publishableKey}
-            partySize={partySize}
-            partySizeMin={pkg.party_size_min}
-            partySizeMax={pkg.party_size_max}
-            stopOfferIds={resolvedStops}
-          />
+        <div className="mt-8 space-y-6">
+          {!user ? (
+            <CheckoutAuthPanel />
+          ) : (
+            <NightPackageCheckoutForm
+              packageId={pkg.id}
+              packageName={pkg.title}
+              publishableKey={publishableKey}
+              partySize={partySize}
+              partySizeMin={pkg.party_size_min}
+              partySizeMax={pkg.party_size_max}
+              stopOfferIds={resolvedStops}
+            />
+          )}
         </div>
       </div>
     </PageShell>

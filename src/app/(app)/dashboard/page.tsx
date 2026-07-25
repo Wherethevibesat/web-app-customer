@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   CalendarDays,
+  Home,
   MapPin,
   MessageSquare,
   MoonStar,
@@ -58,6 +59,12 @@ export default async function DashboardPage() {
 
   const latestOrder = orders?.[0] ?? null;
   const quickActions = [
+    {
+      href: "/discover",
+      label: "Discover",
+      desc: "Main homepage — what’s on tonight",
+      icon: Home,
+    },
     {
       href: "/packages",
       label: "Build Your Night",

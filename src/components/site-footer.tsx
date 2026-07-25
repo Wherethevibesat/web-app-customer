@@ -33,7 +33,6 @@ export function SiteFooter() {
             <ul className="mt-3 space-y-2 text-sm text-wtva-muted">
               <li><Link href="/auth/login" className="hover:text-foreground">Sign in</Link></li>
               <li><Link href="/auth/register" className="hover:text-foreground">Create account</Link></li>
-              <li><Link href="/check-in" className="hover:text-foreground">Check in</Link></li>
               <li><Link href="/profile" className="hover:text-foreground">Profile</Link></li>
             </ul>
           </div>

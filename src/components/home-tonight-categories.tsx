@@ -18,7 +18,7 @@ const CATEGORIES = [
   { label: "Rooftops", href: buildBrowseUrl("/discover/search", { q: "Rooftop" }), icon: Building2 },
   { label: "Afrobeats", href: buildBrowseUrl("/discover/search", { q: "Afrobeats" }), icon: Disc3 },
   { label: "Live Music", href: buildBrowseUrl("/discover/search", { q: "Live Music" }), icon: Music2 },
-  { label: "Build Your Night", href: "/packages", icon: Sparkles },
+  { label: "VIP & Tables", href: buildBrowseUrl("/discover/search", { q: "VIP" }), icon: Sparkles },
   { label: "After Hours", href: buildBrowseUrl("/discover/search", { q: "After Hours" }), icon: Moon },
   { label: "Brunch", href: buildBrowseUrl("/discover/search", { q: "Brunch" }), icon: Coffee },
 ] as const;
