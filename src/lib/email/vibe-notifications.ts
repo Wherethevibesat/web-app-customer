@@ -12,6 +12,40 @@ function formatPrice(cents: number) {
   return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
 }
 
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+export function notifyGuestVibeSplitInvite(params: {
+  toEmail: string;
+  hostName: string;
+  packageTitle: string;
+  amountCents: number;
+  expiresAt: string;
+  payUrl: string;
+}) {
+  const amount = formatPrice(params.amountCents);
+  const when = new Date(params.expiresAt).toLocaleString();
+  const host = escapeHtml(params.hostName || "A friend");
+  const title = escapeHtml(params.packageTitle);
+  const body = `<p><strong>${host}</strong> invited you to split <strong>${title}</strong>.</p>
+<p>Your share: <strong>${amount}</strong></p>
+<p>Pay by <strong>${escapeHtml(when)}</strong> so the vibe can be booked. Unpaid shares expire after that — paid shares are not auto-refunded.</p>
+<p><a href="${params.payUrl}" style="display:inline-block;margin-top:12px;padding:12px 18px;background:#7c3aed;color:#fff;text-decoration:none;border-radius:999px;font-weight:700">Pay my share</a></p>
+<p style="font-size:13px;color:#555">Or open this link: ${escapeHtml(params.payUrl)}</p>`;
+
+  sendEmailSafe({
+    to: params.toEmail,
+    subject: `Pay your share: ${params.packageTitle} (${amount})`,
+    html: layout("You're invited to split a vibe", body),
+    text: `${params.hostName} invited you to split ${params.packageTitle}. Your share is ${amount}. Pay by ${when}: ${params.payUrl}`,
+  });
+}
+
 export function notifyVenueNewVibeBooking(params: {
   venueOwnerEmail: string;
   venueOwnerName: string;

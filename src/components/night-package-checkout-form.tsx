@@ -111,6 +111,7 @@ type Props = {
   stopOfferIds: string[];
   startsOn: string;
   hidePartySelect?: boolean;
+  estimatedTotal?: number;
 };
 
 export function NightPackageCheckoutForm({
@@ -122,6 +123,7 @@ export function NightPackageCheckoutForm({
   stopOfferIds,
   startsOn,
   hidePartySelect = false,
+  estimatedTotal,
 }: Props) {
   const [partySize, setPartySize] = useState(initialPartySize);
   const [payMode, setPayMode] = useState<"solo" | "split">("solo");
@@ -139,7 +141,11 @@ export function NightPackageCheckoutForm({
     new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n);
 
   useEffect(() => {
-    if (payMode !== "solo") return;
+    if (payMode !== "solo") {
+      setClientSecret(null);
+      setLoadingIntent(false);
+      return;
+    }
     let cancelled = false;
     setLoadingIntent(true);
     setClientSecret(null);
@@ -227,6 +233,7 @@ export function NightPackageCheckoutForm({
           partySize={partySize}
           stopOfferIds={stopOfferIds}
           startsOn={startsOn}
+          estimatedTotal={breakdown?.amount ?? estimatedTotal}
         />
       ) : (
         <>

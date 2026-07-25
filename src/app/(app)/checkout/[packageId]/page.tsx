@@ -81,7 +81,11 @@ export default async function CheckoutPage({
         <p className="mt-4 text-xl font-bold">{formatPrice(Number(pkg.price))}</p>
         <div className="mt-8 space-y-6">
           {!user ? (
-            <CheckoutAuthPanel />
+            <CheckoutAuthPanel
+              continueHref={`/checkout/${packageId}`}
+              title="Sign in to finish VIP checkout"
+              subtitle="Log in or create an account — we’ll bring you straight back to pay."
+            />
           ) : (
             <VipCheckoutForm
               packageId={packageId}

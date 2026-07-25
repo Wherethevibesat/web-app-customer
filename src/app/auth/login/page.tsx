@@ -7,15 +7,26 @@ import { AuthCard } from "@/components/auth-card";
 import { BusinessAccountLinks } from "@/components/auth/business-account-links";
 import { createClient } from "@/lib/supabase/client";
 import { buttonClass } from "@/lib/button";
+import {
+  readVibeCheckoutDraft,
+  vibeCheckoutHref,
+} from "@/lib/vibe-checkout-draft";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/dashboard";
+  const nextParam = searchParams.get("next");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  function resolveNext() {
+    if (nextParam) return nextParam;
+    const draft = readVibeCheckoutDraft();
+    if (draft) return vibeCheckoutHref(draft);
+    return "/dashboard";
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,7 +39,7 @@ function LoginForm() {
       setError(err.message);
       return;
     }
-    router.push(next);
+    router.push(resolveNext());
     router.refresh();
   }
 
@@ -68,7 +79,14 @@ function LoginForm() {
       </form>
       <p className="mt-6 text-center text-sm text-wtva-muted">
         New here?{" "}
-        <Link href="/auth/register" className="font-medium text-foreground underline">
+        <Link
+          href={
+            nextParam
+              ? `/auth/register?next=${encodeURIComponent(nextParam)}`
+              : "/auth/register"
+          }
+          className="font-medium text-foreground underline"
+        >
           Create a free customer account
         </Link>
       </p>

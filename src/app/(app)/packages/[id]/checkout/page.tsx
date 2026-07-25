@@ -3,9 +3,14 @@ import { redirect } from "next/navigation";
 import { CheckCircle } from "lucide-react";
 import { PageShell } from "@/components/page-shell";
 import { CheckoutAuthPanel } from "@/components/checkout-auth-panel";
+import { VibeCheckoutDraftPersist } from "@/components/vibe-checkout-draft-persist";
+import { VibeCheckoutResume } from "@/components/vibe-checkout-resume";
 import { NightPackageCheckoutForm } from "@/components/night-package-checkout-form";
 import { createClient } from "@/lib/supabase/server";
-import { getPublishableKey } from "@/lib/stripe/server";
+import {
+  getNightPackageCommissionPct,
+  getPublishableKey,
+} from "@/lib/stripe/server";
 import {
   getPublishedNightPackage,
   listApprovedStopOffers,
@@ -90,7 +95,12 @@ export default async function NightPackageCheckoutPage({
   }
 
   if (!startsOnParam || !isIsoDateOnOrAfterToday(startsOnParam)) {
-    redirect(planHref);
+    // Client may restore draft after login; avoid hard-bounce to Build.
+    return (
+      <PageShell title="Checkout" width="narrow" backHref={planHref} backLabel="Back">
+        <VibeCheckoutResume packageId={pkg.id} />
+      </PageShell>
+    );
   }
   const startsOn = startsOnParam as EventDateIso;
 
@@ -136,8 +146,20 @@ export default async function NightPackageCheckoutPage({
     Math.min(pkg.party_size_max, Number(party) || pkg.party_size_min),
   );
 
+  const unitSubtotal = displayLines.reduce((sum, l) => sum + l.price_cents, 0);
+  const subtotalCents = unitSubtotal * partySize;
+  const commissionPct = await getNightPackageCommissionPct().catch(() => 15);
+  const estimatedTotal =
+    (subtotalCents + Math.round((subtotalCents * commissionPct) / 100)) / 100;
+
   return (
     <PageShell title="" width="narrow" backHref={planHref} backLabel="Back">
+      <VibeCheckoutDraftPersist
+        packageId={pkg.id}
+        party={partySize}
+        stops={resolvedStopIds.join(",")}
+        startsOn={startsOn}
+      />
       <VibeFlowSteps step={2} />
 
       <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-5 md:p-6">
@@ -166,7 +188,14 @@ export default async function NightPackageCheckoutPage({
 
         <div className="mt-6 space-y-6">
           {!user ? (
-            <CheckoutAuthPanel />
+            <>
+              <p className="rounded-xl border border-wtva-dark-300 bg-wtva-dark-400/50 px-4 py-3 text-sm text-wtva-muted">
+                Your vibe is ready — sign in to pay. You won&apos;t lose this plan.
+              </p>
+              <CheckoutAuthPanel
+                continueHref={`/packages/${pkg.id}/checkout?party=${partySize}&stops=${encodeURIComponent(resolvedStopIds.join(","))}&startsOn=${startsOn}`}
+              />
+            </>
           ) : (
             <NightPackageCheckoutForm
               packageId={pkg.id}
@@ -177,6 +206,7 @@ export default async function NightPackageCheckoutPage({
               partySizeMax={pkg.party_size_max}
               stopOfferIds={resolvedStopIds}
               startsOn={startsOn}
+              estimatedTotal={estimatedTotal}
               hidePartySelect
             />
           )}

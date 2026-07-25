@@ -19,6 +19,7 @@ export async function GET(
     status: string;
     user_id: string | null;
     invite_label: string | null;
+    email: string | null;
   }>) ?? [];
 
   return NextResponse.json({
@@ -27,6 +28,7 @@ export async function GET(
     packageId: group.package_id,
     packageTitle: pkg?.title ?? "Curated vibe",
     packageSlug: pkg?.slug ?? null,
+    hostUserId: group.host_user_id,
     partySize: group.party_size,
     startsOn: group.starts_on,
     payerCount: group.payer_count,
@@ -43,6 +45,7 @@ export async function GET(
       status: s.status,
       userId: s.user_id,
       label: s.invite_label,
+      email: s.email,
     })),
     paidCount: shares.filter((s) => s.status === "paid").length,
     openGuestShareId:

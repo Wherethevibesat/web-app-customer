@@ -14,11 +14,17 @@ import {
   finalizeNightPackageMarketplace,
 } from "@/lib/stripe/vibe-marketplace";
 import { isIsoDateOnOrAfterToday } from "@/lib/event-dates";
+import { customerPortalUrl } from "@/lib/email/send";
+import { notifyGuestVibeSplitInvite } from "@/lib/email/vibe-notifications";
 
-const GROUP_TTL_MS = 24 * 60 * 60 * 1000;
+export const SPLIT_TTL_MINUTES = [30, 60, 360, 1440, 2880] as const;
 
 export function newInviteToken() {
   return randomBytes(18).toString("base64url");
+}
+
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
 export async function expireGroupIfNeeded(groupId: string): Promise<boolean> {
@@ -31,6 +37,7 @@ export async function expireGroupIfNeeded(groupId: string): Promise<boolean> {
   if (!group || group.status !== "collecting") return false;
   if (new Date(group.expires_at as string).getTime() > Date.now()) return false;
 
+  // Expire unpaid collection only — do not auto-refund paid shares.
   await admin
     .from("vibe_payment_groups")
     .update({ status: "expired", updated_at: new Date().toISOString() })
@@ -41,11 +48,21 @@ export async function expireGroupIfNeeded(groupId: string): Promise<boolean> {
 
 export async function createVibePaymentGroup(params: {
   hostUserId: string;
+  hostName?: string | null;
+  hostEmail?: string | null;
   packageId: string;
   partySize: number;
   startsOn: string;
   stopOfferIds: string[];
   payerCount: number;
+  /** Even split (default) or custom amounts that must sum to total. */
+  splitMode?: "even" | "custom";
+  /** Per-payer amounts in cents, length === payerCount when custom. Index 0 = host. */
+  amountCents?: number[];
+  /** Guest emails, length === payerCount - 1 */
+  guestEmails: string[];
+  /** Deadline presets in minutes */
+  expiresInMinutes?: number;
 }): Promise<{
   groupId: string;
   inviteToken: string;
@@ -53,11 +70,36 @@ export async function createVibePaymentGroup(params: {
   amounts: number[];
   totalCents: number;
   expiresAt: string;
+  inviteUrl: string;
 }> {
   if (!isIsoDateOnOrAfterToday(params.startsOn)) {
     throw new Error("Pick a start date (today or later)");
   }
   const payerCount = Math.max(2, Math.min(20, Math.floor(params.payerCount)));
+  const expiresInMinutes = SPLIT_TTL_MINUTES.includes(
+    (params.expiresInMinutes ?? 1440) as (typeof SPLIT_TTL_MINUTES)[number],
+  )
+    ? Number(params.expiresInMinutes ?? 1440)
+    : 1440;
+
+  const guestEmails = params.guestEmails
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  if (guestEmails.length !== payerCount - 1) {
+    throw new Error(`Add ${payerCount - 1} guest email${payerCount - 1 === 1 ? "" : "s"}`);
+  }
+  if (guestEmails.some((e) => !isValidEmail(e))) {
+    throw new Error("One or more guest emails look invalid");
+  }
+  if (new Set(guestEmails).size !== guestEmails.length) {
+    throw new Error("Guest emails must be unique");
+  }
+  if (
+    params.hostEmail &&
+    guestEmails.includes(params.hostEmail.trim().toLowerCase())
+  ) {
+    throw new Error("Guest emails can’t include your own email");
+  }
 
   const pkg = await getPublishedNightPackageForCheckout(params.packageId, {
     useAdmin: true,
@@ -90,9 +132,29 @@ export async function createVibePaymentGroup(params: {
   const subtotalCents = unitSubtotal * params.partySize;
   const commissionCents = Math.round((subtotalCents * commissionPct) / 100);
   const totalCents = subtotalCents + commissionCents;
-  const amounts = evenSplitCents(totalCents, payerCount);
+
+  let amounts: number[];
+  if (params.splitMode === "custom") {
+    const custom = (params.amountCents ?? []).map((n) => Math.round(Number(n)));
+    if (custom.length !== payerCount) {
+      throw new Error("Custom amounts must match the number of people paying");
+    }
+    if (custom.some((c) => !Number.isFinite(c) || c < 50)) {
+      throw new Error("Each share must be at least $0.50");
+    }
+    const sum = custom.reduce((a, b) => a + b, 0);
+    if (sum !== totalCents) {
+      throw new Error(
+        `Custom amounts must add up to $${(totalCents / 100).toFixed(2)} (got $${(sum / 100).toFixed(2)})`,
+      );
+    }
+    amounts = custom;
+  } else {
+    amounts = evenSplitCents(totalCents, payerCount);
+  }
+
   const inviteToken = newInviteToken();
-  const expiresAt = new Date(Date.now() + GROUP_TTL_MS).toISOString();
+  const expiresAt = new Date(Date.now() + expiresInMinutes * 60 * 1000).toISOString();
   const stopOfferIds = stops.map((s) => s.stop_offer_id);
 
   const admin = createAdminClient();
@@ -111,6 +173,7 @@ export async function createVibePaymentGroup(params: {
       status: "collecting",
       invite_token: inviteToken,
       expires_at: expiresAt,
+      expires_in_minutes: expiresInMinutes,
     })
     .select("id")
     .single();
@@ -120,24 +183,51 @@ export async function createVibePaymentGroup(params: {
     group_id: group.id,
     user_id: index === 0 ? params.hostUserId : null,
     role: index === 0 ? "host" : "guest",
-    invite_label: index === 0 ? "Host" : `Guest ${index}`,
+    invite_label: index === 0 ? "You (host)" : guestEmails[index - 1],
+    email: index === 0 ? (params.hostEmail?.trim().toLowerCase() ?? null) : guestEmails[index - 1],
     amount_cents: amountCents,
     status: "pending",
+    share_invite_token: index === 0 ? null : newInviteToken(),
   }));
 
   const { data: shares, error: shareError } = await admin
     .from("vibe_payment_shares")
     .insert(shareRows)
-    .select("id");
+    .select("id, role, email, amount_cents, share_invite_token, created_at");
   if (shareError) throw shareError;
+
+  const orderedShares = [...(shares ?? [])].sort((a, b) => {
+    if (a.role === "host") return -1;
+    if (b.role === "host") return 1;
+    return String(a.created_at).localeCompare(String(b.created_at));
+  });
+  const inviteUrl = customerPortalUrl(`/packages/split/${inviteToken}`);
+  const hostName = params.hostName?.trim() || "A friend";
+  const packageTitle = pkg.title ?? "Curated vibe";
+
+  for (const share of orderedShares) {
+    if (share.role !== "guest" || !share.email) continue;
+    const payUrl = customerPortalUrl(
+      `/packages/split/${inviteToken}?share=${share.id}`,
+    );
+    notifyGuestVibeSplitInvite({
+      toEmail: share.email as string,
+      hostName,
+      packageTitle,
+      amountCents: Number(share.amount_cents),
+      expiresAt,
+      payUrl,
+    });
+  }
 
   return {
     groupId: group.id as string,
     inviteToken,
-    shareIds: (shares ?? []).map((s) => s.id as string),
+    shareIds: orderedShares.map((s) => s.id as string),
     amounts,
     totalCents,
     expiresAt,
+    inviteUrl,
   };
 }
 
@@ -145,6 +235,7 @@ export async function createSharePaymentIntent(params: {
   groupId: string;
   shareId: string;
   userId: string;
+  userEmail?: string | null;
 }): Promise<{
   clientSecret: string;
   paymentIntentId: string;
@@ -182,6 +273,16 @@ export async function createSharePaymentIntent(params: {
   if (share.role === "guest") {
     if (share.user_id && share.user_id !== params.userId) {
       throw new Error("This share is claimed by someone else");
+    }
+    const shareEmail = (share.email as string | null)?.toLowerCase() ?? null;
+    const userEmail = params.userEmail?.trim().toLowerCase() ?? null;
+    if (
+      shareEmail &&
+      userEmail &&
+      shareEmail !== userEmail &&
+      !share.user_id
+    ) {
+      // Soft prefer email match, but still allow claim if host shared the link.
     }
     if (!share.user_id) {
       await admin
@@ -292,7 +393,6 @@ async function finalizePaidGroup(groupId: string): Promise<string | null> {
     throw new Error(`Cannot finalize group in status ${group.status}`);
   }
 
-  // Synthetic PI id for order uniqueness — use group id as stable key.
   const syntheticPi = `vibe_group_${groupId}`;
 
   const result = await recordNightPackageOrder({
@@ -334,10 +434,11 @@ export async function getGroupByToken(token: string) {
       `
       id, package_id, host_user_id, party_size, starts_on, payer_count,
       subtotal_cents, commission_cents, total_cents, status, expires_at,
-      invite_token, order_id,
+      expires_in_minutes, invite_token, order_id,
       package:night_packages(id, title, slug),
       shares:vibe_payment_shares(
-        id, role, amount_cents, status, user_id, invite_label, paid_at
+        id, role, amount_cents, status, user_id, invite_label, email, paid_at,
+        share_invite_token
       )
     `,
     )

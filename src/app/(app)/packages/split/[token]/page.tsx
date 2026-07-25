@@ -7,13 +7,17 @@ import { getPublishableKey } from "@/lib/stripe/server";
 import { getGroupByToken } from "@/lib/stripe/vibe-split";
 import { vibeCopy } from "@/lib/vibe-copy";
 import { buttonClass } from "@/lib/button";
+import { customerPortalUrl } from "@/lib/email/send";
 
 export default async function VibeSplitInvitePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ token: string }>;
+  searchParams: Promise<{ share?: string }>;
 }) {
   const { token } = await params;
+  const { share: preferredShareId } = await searchParams;
   const group = await getGroupByToken(token);
   if (!group) {
     return (
@@ -40,6 +44,7 @@ export default async function VibeSplitInvitePage({
     status: string;
     user_id: string | null;
     invite_label: string | null;
+    email: string | null;
   }>) ?? [];
 
   return (
@@ -58,7 +63,14 @@ export default async function VibeSplitInvitePage({
 
         {!user ? (
           <div className="mt-6">
-            <CheckoutAuthPanel />
+            <p className="mb-4 rounded-xl border border-wtva-dark-300 bg-wtva-dark-400/50 px-4 py-3 text-sm text-wtva-muted">
+              Sign in to pay your share — you&apos;ll stay on this invite.
+            </p>
+            <CheckoutAuthPanel
+              title="Sign in to pay your share"
+              subtitle="Log in or create an account. We’ll bring you right back to this split."
+              continueHref={`/packages/split/${token}${preferredShareId ? `?share=${preferredShareId}` : ""}`}
+            />
           </div>
         ) : !publishableKey ? (
           <p className="mt-6 text-sm text-wtva-muted">Checkout is not configured.</p>
@@ -68,11 +80,15 @@ export default async function VibeSplitInvitePage({
               token={token}
               publishableKey={publishableKey}
               userId={user.id}
+              userEmail={user.email}
+              preferredShareId={preferredShareId ?? null}
+              inviteUrl={customerPortalUrl(`/packages/split/${token}`)}
               initial={{
                 id: group.id as string,
                 status: group.status as string,
                 total: Number(group.total_cents) / 100,
                 expiresAt: group.expires_at as string,
+                hostUserId: group.host_user_id as string,
                 shares: shares.map((s) => ({
                   id: s.id,
                   role: s.role,
@@ -80,6 +96,7 @@ export default async function VibeSplitInvitePage({
                   status: s.status,
                   userId: s.user_id,
                   label: s.invite_label,
+                  email: s.email,
                 })),
               }}
             />

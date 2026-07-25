@@ -1,37 +1,57 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { AuthCard } from "@/components/auth-card";
 import { BusinessAccountLinks } from "@/components/auth/business-account-links";
 import { createClient } from "@/lib/supabase/client";
 import { buttonClass } from "@/lib/button";
+import {
+  readVibeCheckoutDraft,
+  vibeCheckoutHref,
+} from "@/lib/vibe-checkout-draft";
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextParam = searchParams.get("next");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  function resolveNext() {
+    if (nextParam) return nextParam;
+    const draft = readVibeCheckoutDraft();
+    if (draft) return vibeCheckoutHref(draft);
+    return "/dashboard";
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    const next = resolveNext();
     const supabase = createClient();
     const { error: err } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { name, role: "customer" } },
+      options: {
+        data: { name, role: "customer" },
+        emailRedirectTo:
+          typeof window !== "undefined"
+            ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`
+            : undefined,
+      },
     });
     setLoading(false);
     if (err) {
       setError(err.message);
       return;
     }
-    router.push("/dashboard");
+    router.push(next);
     router.refresh();
   }
 
@@ -94,10 +114,21 @@ export default function RegisterPage() {
       </p>
       <p className="mt-4 text-center text-sm text-wtva-muted">
         Already have an account?{" "}
-        <Link href="/auth/login" className="font-medium text-foreground underline">
+        <Link
+          href={nextParam ? `/auth/login?next=${encodeURIComponent(nextParam)}` : "/auth/login"}
+          className="font-medium text-foreground underline"
+        >
           Sign in
         </Link>
       </p>
     </AuthCard>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
   );
 }

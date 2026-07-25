@@ -23,6 +23,7 @@ export async function POST(request: Request) {
       groupId,
       shareId,
       userId: user.id,
+      userEmail: user.email ?? null,
     });
     return NextResponse.json(intent);
   } catch (e) {

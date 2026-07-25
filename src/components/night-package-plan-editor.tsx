@@ -12,6 +12,7 @@ import {
   type ApprovedStopOffer,
 } from "@/lib/data/night-packages-shared";
 import { toLocalIsoDate } from "@/lib/event-dates";
+import { saveVibeCheckoutDraft } from "@/lib/vibe-checkout-draft";
 import { slotMoodEmoji, vibeCopy } from "@/lib/vibe-copy";
 import { VibeFlowSteps } from "@/components/vibe-flow-steps";
 import { VenueNameButton } from "@/components/venue-name-button";
@@ -106,9 +107,16 @@ export function NightPackagePlanEditor({
       return;
     }
     setDateError(null);
+    const stopsParam = stops.map((s) => s.id).join(",");
     const params = new URLSearchParams({
       party: String(partySize),
-      stops: stops.map((s) => s.id).join(","),
+      stops: stopsParam,
+      startsOn,
+    });
+    saveVibeCheckoutDraft({
+      packageId,
+      party: partySize,
+      stops: stopsParam,
       startsOn,
     });
     router.push(`/packages/${packageId}/checkout?${params.toString()}`);

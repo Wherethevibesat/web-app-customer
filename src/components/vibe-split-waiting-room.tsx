@@ -19,6 +19,7 @@ type Share = {
   status: string;
   userId: string | null;
   label: string | null;
+  email?: string | null;
 };
 
 type GroupState = {
@@ -26,6 +27,7 @@ type GroupState = {
   status: string;
   total: number;
   expiresAt: string;
+  hostUserId: string;
   shares: Share[];
 };
 
@@ -88,11 +90,17 @@ export function VibeSplitWaitingRoom({
   token,
   publishableKey,
   userId,
+  userEmail,
+  preferredShareId,
+  inviteUrl,
   initial,
 }: {
   token: string;
   publishableKey: string;
   userId: string;
+  userEmail?: string | null;
+  preferredShareId?: string | null;
+  inviteUrl?: string | null;
   initial: GroupState;
 }) {
   const router = useRouter();
@@ -100,6 +108,7 @@ export function VibeSplitWaitingRoom({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const stripePromise = useMemo(
     () => loadStripe(publishableKey),
@@ -121,6 +130,7 @@ export function VibeSplitWaitingRoom({
       status: data.status,
       total: data.total,
       expiresAt: data.expiresAt,
+      hostUserId: data.hostUserId,
       shares: data.shares,
     });
   }, [token]);
@@ -133,19 +143,36 @@ export function VibeSplitWaitingRoom({
     return () => window.clearInterval(id);
   }, [group.status, refresh]);
 
+  const email = userEmail?.trim().toLowerCase() ?? null;
+  const isHost = group.hostUserId === userId;
+
   const myShare =
+    (preferredShareId
+      ? group.shares.find((s) => s.id === preferredShareId)
+      : null) ??
     group.shares.find((s) => s.userId === userId) ??
+    (isHost
+      ? group.shares.find((s) => s.role === "host")
+      : null) ??
+    (email
+      ? group.shares.find(
+          (s) =>
+            s.role === "guest" &&
+            s.status === "pending" &&
+            s.email?.toLowerCase() === email,
+        )
+      : null) ??
     group.shares.find(
       (s) => s.role === "guest" && s.status === "pending" && !s.userId,
     ) ??
     null;
 
-  const iPaid = group.shares.some(
-    (s) => s.userId === userId && s.status === "paid",
-  );
+  const iPaid =
+    myShare?.status === "paid" ||
+    group.shares.some((s) => s.userId === userId && s.status === "paid");
 
   async function startPay() {
-    if (!myShare) return;
+    if (!myShare || myShare.status === "paid") return;
     setStarting(true);
     setError(null);
     try {
@@ -183,25 +210,56 @@ export function VibeSplitWaitingRoom({
 
   if (group.status === "expired" || group.status === "cancelled") {
     return (
-      <p className="text-sm text-wtva-muted">
-        This split is {group.status}. Ask the host to start a new one.
-      </p>
+      <div className="space-y-2 text-sm text-wtva-muted">
+        <p>This split is {group.status}.</p>
+        <p>
+          Unpaid shares are closed. Any share already paid is not auto-refunded —
+          contact support if you need help.
+        </p>
+      </div>
     );
   }
 
   return (
     <div className="space-y-5">
+      {isHost && inviteUrl && (
+        <div className="space-y-2 rounded-xl border border-wtva-dark-300 bg-wtva-dark-400/40 p-4">
+          <p className="text-sm font-semibold">Payment requests sent</p>
+          <p className="text-xs text-wtva-muted">
+            Friends got an email with their pay link. You can also share this
+            waiting-room link:
+          </p>
+          <input
+            readOnly
+            value={inviteUrl}
+            className="w-full rounded-lg border border-wtva-dark-300 bg-wtva-card px-3 py-2 text-xs"
+            onFocus={(e) => e.target.select()}
+          />
+          <button
+            type="button"
+            className={buttonClass("secondary", "sm", "w-full")}
+            onClick={async () => {
+              await navigator.clipboard.writeText(inviteUrl);
+              setCopied(true);
+              window.setTimeout(() => setCopied(false), 1500);
+            }}
+          >
+            {copied ? "Copied" : "Copy invite link"}
+          </button>
+        </div>
+      )}
+
       <ul className="divide-y divide-wtva-dark-300 rounded-xl border border-wtva-dark-300">
         {group.shares.map((s) => (
           <li
             key={s.id}
             className="flex items-center justify-between gap-3 px-4 py-3 text-sm"
           >
-            <span>
+            <span className="min-w-0 truncate">
               {s.label ?? s.role}
-              {s.userId === userId ? " (you)" : ""}
+              {s.id === myShare?.id ? " (you)" : ""}
             </span>
-            <span className="font-semibold tabular-nums">
+            <span className="shrink-0 font-semibold tabular-nums">
               {money(s.amount)} · {s.status}
             </span>
           </li>
