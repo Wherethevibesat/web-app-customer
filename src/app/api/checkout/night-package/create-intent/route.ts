@@ -11,6 +11,7 @@ import {
   assertVibeVenuesConnectReady,
   connectGapErrorMessage,
 } from "@/lib/stripe/vibe-marketplace";
+import { buildMobilePayUrl } from "@/lib/stripe/mobile-pay-token";
 
 export async function POST(request: Request) {
   const { user } = await requireUser(request);
@@ -108,10 +109,26 @@ export async function POST(request: Request) {
       },
     });
 
+    const amount = totalCents / 100;
+    const amountLabel = new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: amount % 1 === 0 ? 0 : 2,
+    }).format(amount);
+
+    const mobilePayUrl = buildMobilePayUrl({
+      clientSecret: intent.client_secret!,
+      paymentIntentId: intent.id,
+      userId: user.id,
+      kind: "night_package",
+      amountLabel,
+    });
+
     return NextResponse.json({
       clientSecret: intent.client_secret,
       paymentIntentId: intent.id,
-      amount: totalCents / 100,
+      mobilePayUrl,
+      amount,
       subtotal: subtotalCents / 100,
       serviceFee: commissionCents / 100,
       commissionPct,
