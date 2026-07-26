@@ -308,6 +308,8 @@ export async function recordNightPackageOrder(params: {
   startsOn?: string | null;
   guestName?: string | null;
   guestEmail?: string | null;
+  /** Upgrade a request-to-book order after venues confirmed */
+  existingOrderId?: string | null;
 }): Promise<{ orderId: string | null; created: boolean }> {
   const admin = createAdminClient();
   const now = new Date().toISOString();
@@ -337,6 +339,57 @@ export async function recordNightPackageOrder(params: {
   // Only persist successful night-package orders (failed PIs leave no row).
   if (params.status !== "paid") {
     return { orderId: null, created: false };
+  }
+
+  // Pay after request-to-book confirmation
+  if (params.existingOrderId) {
+    const { data: pendingOrder } = await admin
+      .from("night_package_orders")
+      .select("id, user_id, status, package_id")
+      .eq("id", params.existingOrderId)
+      .maybeSingle();
+
+    if (
+      !pendingOrder ||
+      pendingOrder.user_id !== params.userId ||
+      pendingOrder.package_id !== params.packageId
+    ) {
+      throw new Error("Booking request not found");
+    }
+    if (pendingOrder.status !== "awaiting_payment") {
+      if (pendingOrder.status === "paid") {
+        return { orderId: pendingOrder.id as string, created: false };
+      }
+      throw new Error("This plan is not ready for payment");
+    }
+
+    const { error: updateError } = await admin
+      .from("night_package_orders")
+      .update({
+        status: "paid",
+        stripe_payment_intent_id: params.paymentIntentId,
+        subtotal_cents: params.subtotalCents,
+        commission_cents: params.commissionCents,
+        total_cents: params.totalCents,
+        party_size: params.partySize,
+        starts_on: params.startsOn ?? null,
+        guest_name: params.guestName ?? undefined,
+        guest_email: params.guestEmail ?? undefined,
+        paid_at: now,
+        updated_at: now,
+        expires_at: null,
+      })
+      .eq("id", pendingOrder.id)
+      .eq("status", "awaiting_payment");
+    if (updateError) throw updateError;
+
+    await admin
+      .from("night_package_order_stops")
+      .update({ status: "confirmed", payout_status: "pending" })
+      .eq("order_id", pendingOrder.id)
+      .neq("status", "cancelled");
+
+    return { orderId: pendingOrder.id as string, created: true };
   }
 
   const pkg = await getPublishedNightPackageForCheckout(params.packageId, {
@@ -670,6 +723,7 @@ export async function fulfillStripePaymentIntent(
       status: intent.status === "succeeded" ? "paid" : "failed",
       stopOfferIds: parseStopOfferIdsFromMetadata(intent.metadata.stop_offer_ids),
       startsOn: intent.metadata.starts_on || null,
+      existingOrderId: intent.metadata.night_package_order_id || null,
     });
     if (result.created) {
       await recordNightPackagePlatformCommission(intent);

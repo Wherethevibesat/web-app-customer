@@ -39,11 +39,17 @@ export default async function NightPackageCheckoutPage({
     party?: string;
     stops?: string;
     startsOn?: string;
+    orderId?: string;
   }>;
 }) {
   const { id } = await params;
-  const { success, party, stops: stopsParam, startsOn: startsOnParam } =
-    await searchParams;
+  const {
+    success,
+    party,
+    stops: stopsParam,
+    startsOn: startsOnParam,
+    orderId: orderIdParam,
+  } = await searchParams;
 
   const supabase = await createClient();
   const {
@@ -98,7 +104,50 @@ export default async function NightPackageCheckoutPage({
     );
   }
 
-  if (!startsOnParam || !isIsoDateOnOrAfterToday(startsOnParam)) {
+  // Pay after venue confirm: load awaiting_payment order
+  let existingOrder: {
+    id: string;
+    party_size: number;
+    starts_on: string | null;
+    total_cents: number;
+    status: string;
+    stop_offer_ids: string[];
+  } | null = null;
+
+  if (orderIdParam && user) {
+    const { data: orderRow } = await supabase
+      .from("night_package_orders")
+      .select(
+        `
+        id, party_size, starts_on, total_cents, status, user_id,
+        stops:night_package_order_stops(stop_offer_id, sort_order)
+      `,
+      )
+      .eq("id", orderIdParam)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (orderRow && orderRow.status === "awaiting_payment") {
+      const stops = (
+        (orderRow.stops as { stop_offer_id: string; sort_order: number }[]) ?? []
+      )
+        .slice()
+        .sort((a, b) => a.sort_order - b.sort_order);
+      existingOrder = {
+        id: orderRow.id as string,
+        party_size: Number(orderRow.party_size),
+        starts_on: orderRow.starts_on as string | null,
+        total_cents: Number(orderRow.total_cents),
+        status: orderRow.status as string,
+        stop_offer_ids: stops.map((s) => s.stop_offer_id),
+      };
+    }
+  }
+
+  const effectiveStartsOn =
+    existingOrder?.starts_on || startsOnParam || "";
+
+  if (!effectiveStartsOn || !isIsoDateOnOrAfterToday(effectiveStartsOn)) {
     // Client may restore draft after login; avoid hard-bounce to Build.
     return (
       <PageShell title="Checkout" width="narrow" backHref={planHref} backLabel="Back">
@@ -106,7 +155,7 @@ export default async function NightPackageCheckoutPage({
       </PageShell>
     );
   }
-  const startsOn = startsOnParam as EventDateIso;
+  const startsOn = effectiveStartsOn as EventDateIso;
 
   const publishableKey = await getPublishableKey();
   if (!publishableKey) {
@@ -128,7 +177,12 @@ export default async function NightPackageCheckoutPage({
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  const resolvedStopIds = stopOfferIds.length > 0 ? stopOfferIds : defaultStopIds;
+  const resolvedStopIds =
+    existingOrder?.stop_offer_ids?.length
+      ? existingOrder.stop_offer_ids
+      : stopOfferIds.length > 0
+        ? stopOfferIds
+        : defaultStopIds;
 
   const offerById = new Map(
     [...packageStops, ...catalog].map((s) => [s.id, s] as const),
@@ -152,14 +206,19 @@ export default async function NightPackageCheckoutPage({
 
   const partySize = Math.max(
     pkg.party_size_min,
-    Math.min(pkg.party_size_max, Number(party) || pkg.party_size_min),
+    Math.min(
+      pkg.party_size_max,
+      existingOrder?.party_size || Number(party) || pkg.party_size_min,
+    ),
   );
 
   const unitSubtotal = displayLines.reduce((sum, l) => sum + l.price_cents, 0);
   const subtotalCents = unitSubtotal * partySize;
   const commissionPct = await getNightPackageCommissionPct().catch(() => 15);
   const estimatedTotal =
-    (subtotalCents + Math.round((subtotalCents * commissionPct) / 100)) / 100;
+    existingOrder != null
+      ? existingOrder.total_cents / 100
+      : (subtotalCents + Math.round((subtotalCents * commissionPct) / 100)) / 100;
 
   return (
     <PageShell title="" backHref={planHref} backLabel="Back">
@@ -199,19 +258,24 @@ export default async function NightPackageCheckoutPage({
 
         <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-5 md:p-6 sm:max-w-lg">
           <p className="text-sm text-wtva-muted">
-            Total due ·{" "}
+            {existingOrder ? "Pay to lock in · " : "Total due · "}
             <span className="font-bold text-foreground tabular-nums">
               {formatPrice(estimatedTotal)}
             </span>
           </p>
+          {existingOrder && (
+            <p className="mt-2 text-sm text-accent font-semibold">
+              All venues confirmed — complete payment to book.
+            </p>
+          )}
           <div className="mt-5 space-y-6">
             {!user ? (
               <>
                 <p className="rounded-xl border border-wtva-dark-300 bg-wtva-dark-400/50 px-4 py-3 text-sm text-wtva-muted">
-                  Your vibe is ready — sign in to pay. You won&apos;t lose this plan.
+                  Your vibe is ready — sign in to continue. You won&apos;t lose this plan.
                 </p>
                 <CheckoutAuthPanel
-                  continueHref={`/packages/${pkg.id}/checkout?party=${partySize}&stops=${encodeURIComponent(resolvedStopIds.join(","))}&startsOn=${startsOn}`}
+                  continueHref={`/packages/${pkg.id}/checkout?party=${partySize}&stops=${encodeURIComponent(resolvedStopIds.join(","))}&startsOn=${startsOn}${existingOrder ? `&orderId=${existingOrder.id}` : ""}`}
                 />
               </>
             ) : (
@@ -226,6 +290,7 @@ export default async function NightPackageCheckoutPage({
                 startsOn={startsOn}
                 estimatedTotal={estimatedTotal}
                 hidePartySelect
+                existingOrderId={existingOrder?.id ?? null}
               />
             )}
           </div>

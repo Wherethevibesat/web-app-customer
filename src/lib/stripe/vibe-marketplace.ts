@@ -98,9 +98,9 @@ export async function assertVibeVenuesConnectReady(
 export function connectGapErrorMessage(gaps: VibeConnectGap[]): string {
   const names = gaps.map((g) => g.venueName).filter(Boolean);
   if (!names.length) {
-    return "One or more places are not ready to accept vibe payments yet.";
+    return "One or more places are not ready for instant checkout yet — you can request to book instead.";
   }
-  return `These places still need Stripe Connect before this vibe can be booked: ${names.join(", ")}.`;
+  return `These places still need Stripe Connect for instant checkout: ${names.join(", ")}. You can request to book while they set up payouts.`;
 }
 
 /** Transfer each stop payout to the venue Connect account. Idempotent per stop. */

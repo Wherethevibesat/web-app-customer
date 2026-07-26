@@ -18,11 +18,13 @@ function CheckoutForm({
   partySize,
   stopOfferIds,
   startsOn,
+  existingOrderId,
 }: {
   packageId: string;
   partySize: number;
   stopOfferIds: string[];
   startsOn: string;
+  existingOrderId?: string | null;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -42,6 +44,7 @@ function CheckoutForm({
       stops: stopOfferIds.join(","),
       startsOn,
     });
+    if (existingOrderId) params.set("orderId", existingOrderId);
 
     const { error: submitError, paymentIntent } = await stripe.confirmPayment({
       elements,
@@ -101,6 +104,8 @@ function CheckoutForm({
   );
 }
 
+type ConnectGap = { venueId: string; venueName: string };
+
 type Props = {
   packageId: string;
   packageName: string;
@@ -112,6 +117,10 @@ type Props = {
   startsOn: string;
   hidePartySelect?: boolean;
   estimatedTotal?: number;
+  /** Pay an already-confirmed request-to-book order */
+  existingOrderId?: string | null;
+  /** Force request mode (e.g. known Connect gaps from server) */
+  initialConnectGaps?: ConnectGap[] | null;
 };
 
 export function NightPackageCheckoutForm({
@@ -124,7 +133,10 @@ export function NightPackageCheckoutForm({
   startsOn,
   hidePartySelect = false,
   estimatedTotal,
+  existingOrderId = null,
+  initialConnectGaps = null,
 }: Props) {
+  const router = useRouter();
   const [partySize, setPartySize] = useState(initialPartySize);
   const [payMode, setPayMode] = useState<"solo" | "split">("solo");
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -135,13 +147,23 @@ export function NightPackageCheckoutForm({
     commissionPct: number;
   } | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [connectGaps, setConnectGaps] = useState<ConnectGap[] | null>(
+    initialConnectGaps,
+  );
   const [loadingIntent, setLoadingIntent] = useState(false);
+  const [requesting, setRequesting] = useState(false);
+  const [requestDone, setRequestDone] = useState<{
+    expiresAt: string;
+    confirmationCode: string;
+  } | null>(null);
 
   const money = (n: number) =>
     new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(n);
 
+  const needsRequest = Boolean(connectGaps?.length) && !existingOrderId;
+
   useEffect(() => {
-    if (payMode !== "solo") {
+    if (payMode !== "solo" || needsRequest || requestDone) {
       setClientSecret(null);
       setLoadingIntent(false);
       return;
@@ -154,15 +176,37 @@ export function NightPackageCheckoutForm({
       const res = await fetch("/api/checkout/night-package/create-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ packageId, partySize, stopOfferIds, startsOn }),
+        body: JSON.stringify({
+          packageId,
+          partySize,
+          stopOfferIds,
+          startsOn,
+          orderId: existingOrderId || undefined,
+        }),
       });
       const data = await res.json();
       if (cancelled) return;
       if (!res.ok) {
-        setLoadError(data.error ?? "Could not start checkout");
+        if (
+          !existingOrderId &&
+          Array.isArray(data.venuesNeedingConnect) &&
+          data.venuesNeedingConnect.length
+        ) {
+          setConnectGaps(data.venuesNeedingConnect as ConnectGap[]);
+          setLoadError(null);
+        } else {
+          setConnectGaps(null);
+          setLoadError(
+            data.error ??
+              (existingOrderId
+                ? "Venues still need payout setup before you can pay. Try again soon."
+                : "Could not start checkout"),
+          );
+        }
         setLoadingIntent(false);
         return;
       }
+      setConnectGaps(null);
       setClientSecret(data.clientSecret);
       setBreakdown({
         amount: Number(data.amount ?? 0),
@@ -175,36 +219,128 @@ export function NightPackageCheckoutForm({
     return () => {
       cancelled = true;
     };
-  }, [packageId, partySize, startsOn, stopOfferIds.join(","), payMode]);
+  }, [
+    packageId,
+    partySize,
+    startsOn,
+    stopOfferIds.join(","),
+    payMode,
+    needsRequest,
+    requestDone,
+    existingOrderId,
+  ]);
+
+  async function submitRequest() {
+    setRequesting(true);
+    setLoadError(null);
+    const res = await fetch("/api/checkout/night-package/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ packageId, partySize, stopOfferIds, startsOn }),
+    });
+    const data = await res.json().catch(() => ({}));
+    setRequesting(false);
+    if (!res.ok) {
+      setLoadError(data.error ?? "Could not send booking request");
+      return;
+    }
+    setRequestDone({
+      expiresAt: data.expiresAt as string,
+      confirmationCode: data.confirmationCode as string,
+    });
+    router.refresh();
+  }
 
   const stripePromise = loadStripe(publishableKey);
 
-  return (
-    <div className="space-y-6">
-      <div className="inline-flex gap-1 rounded-full border border-wtva-dark-300 bg-wtva-dark-400 p-1">
+  if (requestDone) {
+    return (
+      <div className="space-y-3 rounded-xl border border-wtva-dark-300 bg-wtva-dark-400/40 p-4 text-sm">
+        <p className="font-semibold text-foreground">Request sent</p>
+        <p className="text-wtva-muted">
+          Venues have 48 hours to confirm. Guest details stay private until everyone
+          accepts — then you&apos;ll pay the full total.
+        </p>
+        <p className="text-wtva-muted">
+          Ref <span className="font-mono font-semibold text-foreground">{requestDone.confirmationCode}</span>
+          {requestDone.expiresAt
+            ? ` · expires ${new Date(requestDone.expiresAt).toLocaleString()}`
+            : ""}
+        </p>
         <button
           type="button"
-          onClick={() => setPayMode("solo")}
-          className={`rounded-full px-4 py-2 text-sm font-semibold ${
-            payMode === "solo"
-              ? "bg-accent-gradient text-white shadow-accent"
-              : "text-wtva-muted"
-          }`}
+          className={buttonClass("secondary", "md", "mt-2")}
+          onClick={() => router.push("/packages/orders")}
         >
-          Pay myself
-        </button>
-        <button
-          type="button"
-          onClick={() => setPayMode("split")}
-          className={`rounded-full px-4 py-2 text-sm font-semibold ${
-            payMode === "split"
-              ? "bg-accent-gradient text-white shadow-accent"
-              : "text-wtva-muted"
-          }`}
-        >
-          Split with friends
+          View My Plans
         </button>
       </div>
+    );
+  }
+
+  if (needsRequest) {
+    const names = (connectGaps ?? []).map((g) => g.venueName).filter(Boolean);
+    return (
+      <div className="space-y-4">
+        {estimatedTotal != null && (
+          <p className="text-sm text-wtva-muted">
+            Estimated total{" "}
+            <span className="font-semibold text-foreground tabular-nums">
+              {money(estimatedTotal)}
+            </span>{" "}
+            after venues confirm.
+          </p>
+        )}
+        <div className="rounded-xl border border-wtva-dark-300 bg-wtva-dark-400/40 px-4 py-3 text-sm text-wtva-muted">
+          <p className="font-semibold text-foreground">Request to book</p>
+          <p className="mt-1">
+            Some places still need payout setup before instant checkout
+            {names.length ? `: ${names.join(", ")}` : ""}. Send a request — venues
+            confirm first (without seeing your contact info). You&apos;ll pay the full
+            total once everyone accepts.
+          </p>
+        </div>
+        {loadError && <p className="text-sm text-red-400">{loadError}</p>}
+        <button
+          type="button"
+          disabled={requesting}
+          onClick={submitRequest}
+          className={buttonClass("primary", "lg", "w-full")}
+        >
+          {requesting ? "Sending request…" : "Request to book"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {!existingOrderId && (
+        <div className="inline-flex gap-1 rounded-full border border-wtva-dark-300 bg-wtva-dark-400 p-1">
+          <button
+            type="button"
+            onClick={() => setPayMode("solo")}
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              payMode === "solo"
+                ? "bg-accent-gradient text-white shadow-accent"
+                : "text-wtva-muted"
+            }`}
+          >
+            Pay myself
+          </button>
+          <button
+            type="button"
+            onClick={() => setPayMode("split")}
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              payMode === "split"
+                ? "bg-accent-gradient text-white shadow-accent"
+                : "text-wtva-muted"
+            }`}
+          >
+            Split with friends
+          </button>
+        </div>
+      )}
 
       {!hidePartySelect && (
         <label className="block text-sm">
@@ -226,7 +362,7 @@ export function NightPackageCheckoutForm({
         </label>
       )}
 
-      {payMode === "split" ? (
+      {payMode === "split" && !existingOrderId ? (
         <VibeSplitCheckout
           packageId={packageId}
           publishableKey={publishableKey}
@@ -272,6 +408,7 @@ export function NightPackageCheckoutForm({
                 partySize={partySize}
                 stopOfferIds={stopOfferIds}
                 startsOn={startsOn}
+                existingOrderId={existingOrderId}
               />
             </Elements>
           )}
