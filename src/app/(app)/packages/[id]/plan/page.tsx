@@ -112,7 +112,6 @@ export default async function PackagePlanPage({
   return (
     <PageShell
       title=""
-      width="narrow"
       backHref={diy ? "/packages" : `/packages/${pkg.slug || pkg.id}`}
       backLabel={diy ? "Vibes" : "Back"}
     >

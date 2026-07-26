@@ -27,7 +27,7 @@ export function VibePreview({ pkg }: { pkg: NightPackage }) {
       <VibeFlowSteps step={0} />
 
       <div>
-        <h2 className="text-xl font-bold tracking-tight">{pkg.title}</h2>
+        <h2 className="text-2xl font-bold tracking-tight md:text-3xl">{pkg.title}</h2>
         <p className="mt-1 text-sm text-wtva-muted">
           <span className="font-semibold text-accent">✨ {mood}</span>
           {tagline ? ` · ${tagline}` : ""}
@@ -56,14 +56,17 @@ export function VibePreview({ pkg }: { pkg: NightPackage }) {
             stop_offer: {
               title: s.stop_offer!.title,
               slot_type: s.stop_offer!.slot_type,
+              price_cents: s.stop_offer!.price_cents,
               arrival_window: s.stop_offer!.arrival_window,
+              image_url: s.stop_offer!.image_url,
+              why_picked: s.stop_offer!.why_picked,
               venue: s.stop_offer!.venue,
             },
           }))}
         />
       )}
 
-      <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-5">
+      <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-5 sm:max-w-md">
         {stops.length > 0 ? (
           <>
             <p className="text-2xl font-bold tabular-nums">

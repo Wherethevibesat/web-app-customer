@@ -20,6 +20,10 @@ import { buttonClass } from "@/lib/button";
 import { vibeCopy } from "@/lib/vibe-copy";
 import { VibeFlowSteps } from "@/components/vibe-flow-steps";
 import {
+  VibeExperienceCard,
+  VibeExperienceCardGrid,
+} from "@/components/vibe-experience-card";
+import {
   formatVibeStartLabel,
   isIsoDateOnOrAfterToday,
   type EventDateIso,
@@ -136,7 +140,12 @@ export default async function NightPackageCheckoutPage({
       return {
         id: offer.id,
         title: offer.title,
+        slot_type: offer.slot_type,
         price_cents: offer.price_cents,
+        arrival_window: offer.arrival_window ?? null,
+        image_url: "image_url" in offer ? (offer.image_url as string | null) : null,
+        why_picked: "why_picked" in offer ? (offer.why_picked as string | undefined) : undefined,
+        venue: offer.venue ?? null,
       };
     })
     .filter((x): x is NonNullable<typeof x> => Boolean(x));
@@ -153,7 +162,7 @@ export default async function NightPackageCheckoutPage({
     (subtotalCents + Math.round((subtotalCents * commissionPct) / 100)) / 100;
 
   return (
-    <PageShell title="" width="narrow" backHref={planHref} backLabel="Back">
+    <PageShell title="" backHref={planHref} backLabel="Back">
       <VibeCheckoutDraftPersist
         packageId={pkg.id}
         party={partySize}
@@ -162,54 +171,64 @@ export default async function NightPackageCheckoutPage({
       />
       <VibeFlowSteps step={2} />
 
-      <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-5 md:p-6">
-        <p className="text-xs font-semibold uppercase tracking-wide text-accent">
-          {vibeCopy.yourVibe}
-        </p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight">{pkg.title}</h1>
-        <p className="mt-1 text-sm text-wtva-muted">
-          Starting {formatVibeStartLabel(startsOn)} · {displayLines.length}{" "}
-          experiences · {partySize} {partySize === 1 ? "guest" : "guests"}
-        </p>
+      <div className="space-y-6">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wide text-accent">
+            {vibeCopy.yourVibe}
+          </p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight md:text-3xl">
+            {pkg.title}
+          </h1>
+          <p className="mt-1 text-sm text-wtva-muted">
+            Starting {formatVibeStartLabel(startsOn)} · {displayLines.length}{" "}
+            experiences · {partySize} {partySize === 1 ? "guest" : "guests"}
+          </p>
+        </div>
 
-        <ul className="mt-5 divide-y divide-wtva-dark-300 border-y border-wtva-dark-300">
-          {displayLines.map((line) => (
-            <li
-              key={line.id}
-              className="flex items-center justify-between gap-3 py-3 text-sm"
-            >
-              <span className="font-medium">{line.title}</span>
-              <span className="font-semibold tabular-nums">
-                {formatPrice(line.price_cents / 100)}
-              </span>
+        <VibeExperienceCardGrid>
+          {displayLines.map((line, index) => (
+            <li key={line.id}>
+              <VibeExperienceCard
+                stop={line}
+                index={index}
+                total={displayLines.length}
+              />
             </li>
           ))}
-        </ul>
+        </VibeExperienceCardGrid>
 
-        <div className="mt-6 space-y-6">
-          {!user ? (
-            <>
-              <p className="rounded-xl border border-wtva-dark-300 bg-wtva-dark-400/50 px-4 py-3 text-sm text-wtva-muted">
-                Your vibe is ready — sign in to pay. You won&apos;t lose this plan.
-              </p>
-              <CheckoutAuthPanel
-                continueHref={`/packages/${pkg.id}/checkout?party=${partySize}&stops=${encodeURIComponent(resolvedStopIds.join(","))}&startsOn=${startsOn}`}
+        <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-5 md:p-6 sm:max-w-lg">
+          <p className="text-sm text-wtva-muted">
+            Total due ·{" "}
+            <span className="font-bold text-foreground tabular-nums">
+              {formatPrice(estimatedTotal)}
+            </span>
+          </p>
+          <div className="mt-5 space-y-6">
+            {!user ? (
+              <>
+                <p className="rounded-xl border border-wtva-dark-300 bg-wtva-dark-400/50 px-4 py-3 text-sm text-wtva-muted">
+                  Your vibe is ready — sign in to pay. You won&apos;t lose this plan.
+                </p>
+                <CheckoutAuthPanel
+                  continueHref={`/packages/${pkg.id}/checkout?party=${partySize}&stops=${encodeURIComponent(resolvedStopIds.join(","))}&startsOn=${startsOn}`}
+                />
+              </>
+            ) : (
+              <NightPackageCheckoutForm
+                packageId={pkg.id}
+                packageName={pkg.title}
+                publishableKey={publishableKey}
+                partySize={partySize}
+                partySizeMin={pkg.party_size_min}
+                partySizeMax={pkg.party_size_max}
+                stopOfferIds={resolvedStopIds}
+                startsOn={startsOn}
+                estimatedTotal={estimatedTotal}
+                hidePartySelect
               />
-            </>
-          ) : (
-            <NightPackageCheckoutForm
-              packageId={pkg.id}
-              packageName={pkg.title}
-              publishableKey={publishableKey}
-              partySize={partySize}
-              partySizeMin={pkg.party_size_min}
-              partySizeMax={pkg.party_size_max}
-              stopOfferIds={resolvedStopIds}
-              startsOn={startsOn}
-              estimatedTotal={estimatedTotal}
-              hidePartySelect
-            />
-          )}
+            )}
+          </div>
         </div>
       </div>
     </PageShell>

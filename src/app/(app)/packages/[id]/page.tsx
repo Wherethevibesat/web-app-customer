@@ -15,7 +15,6 @@ export default async function PackageDetailPage({
   return (
     <PageShell
       title=""
-      width="narrow"
       backHref="/packages"
       backLabel="Curated Vibes"
     >

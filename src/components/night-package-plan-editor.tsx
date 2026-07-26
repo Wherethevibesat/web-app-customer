@@ -3,19 +3,20 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Info } from "lucide-react";
 import { buttonClass } from "@/lib/button";
 import { formatPrice } from "@/lib/format";
 import {
   nightPackageTotals,
-  slotTypeLabel,
   type ApprovedStopOffer,
 } from "@/lib/data/night-packages-shared";
 import { toLocalIsoDate } from "@/lib/event-dates";
 import { saveVibeCheckoutDraft } from "@/lib/vibe-checkout-draft";
-import { slotMoodEmoji, vibeCopy } from "@/lib/vibe-copy";
+import { vibeCopy } from "@/lib/vibe-copy";
 import { VibeFlowSteps } from "@/components/vibe-flow-steps";
-import { VenueNameButton } from "@/components/venue-name-button";
+import {
+  VibeExperienceCard,
+  VibeExperienceCardGrid,
+} from "@/components/vibe-experience-card";
 
 type PlanStop = ApprovedStopOffer & { scheduled_label?: string | null };
 
@@ -127,11 +128,18 @@ export function NightPackagePlanEditor({
   }
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <VibeFlowSteps step={1} />
 
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <h2 className="text-xl font-bold tracking-tight">{packageTitle}</h2>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight md:text-3xl">
+            {packageTitle}
+          </h2>
+          <p className="mt-1 text-xs text-wtva-muted">
+            We&apos;ll confirm this date with each place — subject to availability.
+          </p>
+        </div>
         <div className="flex flex-wrap items-end gap-3">
           <label className="block text-sm">
             <span className="font-medium text-wtva-muted">Start date</span>
@@ -163,110 +171,62 @@ export function NightPackagePlanEditor({
               ))}
             </select>
           </label>
+          {showShuffle && (
+            <button
+              type="button"
+              className="rounded-full border border-wtva-dark-300 px-4 py-2 text-sm font-semibold hover:border-accent/40"
+              onClick={() => {
+                router.push(
+                  `/packages/${packageId}/plan?mode=random&r=${Date.now()}`,
+                );
+              }}
+            >
+              {vibeCopy.shuffleAgain}
+            </button>
+          )}
         </div>
       </div>
-      <p className="text-xs text-wtva-muted">
-        We&apos;ll confirm this date with each place — subject to availability.
-      </p>
       {dateError && <p className="text-sm text-red-500">{dateError}</p>}
 
-      {showShuffle && (
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="rounded-full border border-wtva-dark-300 px-4 py-2 text-sm font-semibold hover:border-accent/40"
-            onClick={() => {
-              router.push(
-                `/packages/${packageId}/plan?mode=random&r=${Date.now()}`,
-              );
-            }}
-          >
-            {vibeCopy.shuffleAgain}
-          </button>
-        </div>
-      )}
-
-      {allowEmptyStart && stops.length === 0 && (
-        <p className="rounded-2xl border border-dashed border-wtva-dark-300 px-4 py-6 text-center text-sm text-wtva-muted">
+      {allowEmptyStart && stops.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-wtva-dark-300 bg-wtva-card px-5 py-8 text-left text-sm text-wtva-muted">
           Your night is empty — add experiences from the live pool below.
-        </p>
-      )}
-
-      <ul className="divide-y divide-wtva-dark-300 overflow-hidden rounded-2xl border border-wtva-dark-300 bg-wtva-card">
-        {stops.map((stop, index) => {
-          const time =
-            stop.scheduled_label?.trim() ||
-            stop.arrival_window?.split(/[–—-]/)[0]?.trim() ||
-            "";
-          const tip = stop.why_picked?.trim();
-          return (
-            <li key={`${stop.id}-${index}`} className="relative">
-              <div className="flex min-h-[80px] items-center gap-3 px-4 py-3">
-                <span className="text-2xl leading-none" aria-hidden>
-                  {slotMoodEmoji(stop.slot_type)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5">
-                    <p className="font-bold leading-tight">
-                      {slotTypeLabel(stop.slot_type)}
-                    </p>
-                    {tip ? (
-                      <button
-                        type="button"
-                        className="rounded-full p-0.5 text-wtva-muted hover:text-accent"
-                        aria-label="Venue highlight"
-                        onClick={() =>
-                          setInfoIndex(infoIndex === index ? null : index)
-                        }
-                      >
-                        <Info className="h-3.5 w-3.5" />
-                      </button>
-                    ) : null}
-                  </div>
-                  <p className="truncate text-sm text-wtva-muted">
-                    <VenueNameButton
-                      venueId={stop.venue?.id}
-                      name={stop.venue?.name ?? "Place"}
-                      className="inline text-sm"
-                    />
-                    {time ? ` · ${time}` : ""}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  className="shrink-0 text-sm font-semibold text-accent hover:opacity-80"
-                  onClick={() =>
-                    setPicker({
-                      mode: "swap",
-                      index,
-                      slotType: stop.slot_type,
-                    })
-                  }
-                >
-                  {vibeCopy.changeStop} ›
-                </button>
-              </div>
-              {infoIndex === index && tip && (
-                <p className="border-t border-wtva-dark-300 bg-wtva-dark-400/40 px-4 py-2.5 text-xs leading-relaxed text-wtva-muted">
-                  <span className="font-semibold text-foreground">From the venue — </span>
-                  {tip}
-                </p>
-              )}
+        </div>
+      ) : (
+        <VibeExperienceCardGrid>
+          {stops.map((stop, index) => (
+            <li key={`${stop.id}-${index}`}>
+              <VibeExperienceCard
+                stop={stop}
+                index={index}
+                total={stops.length}
+                tipOpen={infoIndex === index}
+                onToggleTip={() =>
+                  setInfoIndex(infoIndex === index ? null : index)
+                }
+                onChange={() =>
+                  setPicker({
+                    mode: "swap",
+                    index,
+                    slotType: stop.slot_type,
+                  })
+                }
+              />
             </li>
-          );
-        })}
-      </ul>
+          ))}
+        </VibeExperienceCardGrid>
+      )}
 
       <button
         type="button"
-        className="w-full rounded-2xl border border-dashed border-wtva-dark-300 py-3 text-sm font-semibold text-wtva-muted hover:border-accent/40 hover:text-foreground"
+        className="w-full rounded-2xl border border-dashed border-wtva-dark-300 bg-wtva-card py-4 text-sm font-semibold text-wtva-muted transition hover:border-accent/40 hover:text-foreground sm:max-w-xs"
         onClick={() => setPicker({ mode: "add" })}
         disabled={stops.length >= 12}
       >
         + Add experience
       </button>
 
-      <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-5">
+      <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-5 sm:max-w-md">
         <p className="text-2xl font-bold tabular-nums">{formatPrice(perPerson)}</p>
         <p className="mt-1 text-sm text-wtva-muted">per person · continue to pay</p>
         <button
@@ -281,7 +241,7 @@ export function NightPackagePlanEditor({
 
       {picker && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4">
-          <div className="max-h-[85vh] w-full max-w-lg overflow-hidden rounded-t-3xl border border-wtva-dark-300 bg-white shadow-xl sm:rounded-3xl">
+          <div className="max-h-[90vh] w-full max-w-5xl overflow-hidden rounded-t-3xl border border-wtva-dark-300 bg-white shadow-xl sm:rounded-3xl">
             <div className="flex items-center justify-between px-5 py-4">
               <h3 className="font-bold">
                 {picker.mode === "swap" ? "Change experience" : "Add experience"}
@@ -294,41 +254,31 @@ export function NightPackagePlanEditor({
                 Close
               </button>
             </div>
-            <ul className="max-h-[50vh] divide-y divide-wtva-dark-300 overflow-y-auto border-t border-wtva-dark-300">
-              {sameSlotFirst.map((offer) => (
-                <li
-                  key={offer.id}
-                  className="flex items-center justify-between gap-3 px-5 py-4"
-                >
-                  <div className="min-w-0">
-                    <p className="font-semibold">{offer.title}</p>
-                    <p className="truncate text-sm text-wtva-muted">
-                      <VenueNameButton
-                        venueId={offer.venue?.id}
-                        name={offer.venue?.name ?? "Place"}
-                        className="inline text-sm"
-                      />
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    className="shrink-0 text-sm font-semibold text-accent hover:opacity-80"
-                    onClick={() => applyPick(offer)}
-                  >
-                    {vibeCopy.changeStop}
-                  </button>
-                </li>
-              ))}
-              {sameSlotFirst.length === 0 && (
-                <li className="px-5 py-8 text-center text-sm text-wtva-muted">
+            <div className="max-h-[65vh] overflow-y-auto border-t border-wtva-dark-300 p-4 sm:p-5">
+              {sameSlotFirst.length === 0 ? (
+                <p className="py-8 text-left text-sm text-wtva-muted">
                   No other live experiences yet.
-                </li>
+                </p>
+              ) : (
+                <VibeExperienceCardGrid>
+                  {sameSlotFirst.map((offer) => (
+                    <li key={offer.id}>
+                      <VibeExperienceCard
+                        stop={offer}
+                        onChange={() => applyPick(offer)}
+                        actionLabel={
+                          picker.mode === "add" ? "Add ›" : `${vibeCopy.changeStop} ›`
+                        }
+                      />
+                    </li>
+                  ))}
+                </VibeExperienceCardGrid>
               )}
-            </ul>
+            </div>
             <div className="border-t border-wtva-dark-300 p-4">
               <Link
                 href="/discover/concierge"
-                className="block text-center text-sm font-semibold text-accent"
+                className="block text-left text-sm font-semibold text-accent sm:text-center"
               >
                 Ask Concierge
               </Link>
