@@ -11,8 +11,11 @@ import { buttonClass } from "@/lib/button";
 import { vibeCopy } from "@/lib/vibe-copy";
 
 const STEPS = [
-  { icon: Sparkles, label: "Choose a curated vibe or start from scratch." },
-  { icon: PartyPopper, label: "Add experiences (places, events, tables)." },
+  {
+    icon: Sparkles,
+    label: "Pick curated, Surprise Me, or Build Your Own.",
+  },
+  { icon: PartyPopper, label: "Add or swap experiences from live venues." },
   { icon: ClipboardList, label: "Review your plan & total." },
   { icon: CreditCard, label: "Checkout — one payment." },
   { icon: CheckCircle2, label: "Show up & enjoy." },

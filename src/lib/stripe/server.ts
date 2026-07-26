@@ -186,7 +186,7 @@ export async function getPublishedNightPackageForCheckout(
       stops:night_package_stops(
         sort_order, scheduled_label, stop_offer_id,
         stop_offer:package_stop_offers(
-          id, title, slot_type, price_cents, status, is_active, venue_id
+          id, title, slot_type, price_cents, status, is_active, diy_pool, venue_id
         )
       )
     `,
@@ -204,6 +204,7 @@ export async function getPublishedNightPackageForCheckout(
     price_cents: number;
     status: string;
     is_active: boolean;
+    diy_pool?: boolean;
     venue_id: string;
   };
 
@@ -222,8 +223,8 @@ export async function getPublishedNightPackageForCheckout(
     .filter(
       (s) =>
         s.stop_offer &&
-        s.stop_offer.status === "approved" &&
-        s.stop_offer.is_active,
+        s.stop_offer.is_active &&
+        (s.stop_offer.status === "approved" || s.stop_offer.diy_pool === true),
     )
     .sort((a, b) => a.sort_order - b.sort_order)
     .map((s) => ({
@@ -255,10 +256,10 @@ export async function resolveApprovedStopOffers(
   const supabase = options?.useAdmin ? createAdminClient() : await createClient();
   const { data, error } = await supabase
     .from("package_stop_offers")
-    .select("id, title, slot_type, price_cents, status, is_active, venue_id")
+    .select("id, title, slot_type, price_cents, status, is_active, diy_pool, venue_id")
     .in("id", unique)
-    .eq("status", "approved")
-    .eq("is_active", true);
+    .eq("is_active", true)
+    .or("status.eq.approved,diy_pool.eq.true");
   if (error) throw error;
 
   const byId = new Map(

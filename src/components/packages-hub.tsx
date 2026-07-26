@@ -7,6 +7,7 @@ import { ArrowRight } from "lucide-react";
 import { buttonClass } from "@/lib/button";
 import type { PackageCard } from "@/lib/data/night-packages-shared";
 import { slotTypeLabel } from "@/lib/data/night-packages-shared";
+import { DIY_VIBE_SLUG } from "@/lib/data/night-packages-shared";
 import { vibeCopy } from "@/lib/vibe-copy";
 
 export function PackagesHub({
@@ -26,6 +27,32 @@ export function PackagesHub({
 
   return (
     <div>
+      {!vibeFilter && (
+        <div className="mb-6 grid gap-3 sm:grid-cols-2">
+          <Link
+            href={`/packages/${DIY_VIBE_SLUG}/plan?mode=random`}
+            className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-card-hover"
+          >
+            <p className="text-lg font-bold tracking-tight">{vibeCopy.surpriseMe}</p>
+            <p className="mt-1 text-sm text-wtva-muted">
+              Shuffle a full night from the live DIY pool — swap anything before you pay.
+            </p>
+            <p className="mt-3 text-sm font-semibold text-accent">
+              Shuffle vibe <ArrowRight className="inline h-4 w-4" />
+            </p>
+          </Link>
+          <Link
+            href={`/packages/${DIY_VIBE_SLUG}/plan`}
+            className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-5 shadow-card transition hover:-translate-y-0.5 hover:shadow-card-hover"
+          >
+            <p className="text-lg font-bold tracking-tight">{vibeCopy.buildYourOwn}</p>
+            <p className="mt-1 text-sm text-wtva-muted">{vibeCopy.diyEntryHint}</p>
+            <p className="mt-3 text-sm font-semibold text-accent">
+              Start empty <ArrowRight className="inline h-4 w-4" />
+            </p>
+          </Link>
+        </div>
+      )}
       {vibeFilterLabel && (
         <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
           <span className="rounded-full bg-accent/10 px-3 py-1 font-semibold text-accent">
@@ -95,8 +122,10 @@ export function PackagesHub({
           )}
         </div>
       ) : (
-        <ul className="grid gap-6 sm:grid-cols-2">
-          {packages.map((pkg) => {
+        <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {packages
+            .filter((pkg) => pkg.slug !== DIY_VIBE_SLUG)
+            .map((pkg) => {
             const tags =
               pkg.vibe_tags.length > 0
                 ? pkg.vibe_tags
@@ -114,7 +143,7 @@ export function PackagesHub({
                         alt=""
                         fill
                         className="object-cover"
-                        sizes="(max-width: 640px) 100vw, 50vw"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
                         unoptimized
                       />
                     ) : (
@@ -126,16 +155,16 @@ export function PackagesHub({
                       </span>
                     )}
                   </div>
-                  <div className="flex flex-1 flex-col p-5 md:p-6">
-                    <h2 className="text-xl font-bold tracking-tight">{pkg.title}</h2>
+                  <div className="flex flex-1 flex-col p-4 md:p-5">
+                    <h2 className="text-lg font-bold tracking-tight">{pkg.title}</h2>
                     {pkg.tagline && (
-                      <p className="mt-2 text-sm leading-relaxed text-wtva-muted line-clamp-3">
+                      <p className="mt-1.5 text-sm leading-relaxed text-wtva-muted line-clamp-2">
                         {pkg.tagline}
                       </p>
                     )}
                     {tags.length > 0 && (
-                      <ul className="mt-4 flex flex-wrap gap-2">
-                        {tags.slice(0, 5).map((tag) => (
+                      <ul className="mt-3 flex flex-wrap gap-1.5">
+                        {tags.slice(0, 4).map((tag) => (
                           <li
                             key={tag}
                             className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-semibold text-accent"
@@ -147,7 +176,7 @@ export function PackagesHub({
                     )}
                     <Link
                       href={`/packages/${pkg.slug || pkg.id}`}
-                      className={buttonClass("primary", "md", "mt-auto pt-5 w-full")}
+                      className={buttonClass("primary", "md", "mt-auto pt-4 w-full")}
                     >
                       {vibeCopy.viewVibe} <ArrowRight className="h-4 w-4" />
                     </Link>

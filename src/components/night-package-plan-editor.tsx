@@ -27,6 +27,8 @@ export function NightPackagePlanEditor({
   partySizeMin,
   partySizeMax,
   commissionPct,
+  allowEmptyStart = false,
+  showShuffle = false,
 }: {
   packageId: string;
   packageTitle: string;
@@ -38,6 +40,8 @@ export function NightPackagePlanEditor({
   diyCompareCents?: number | null;
   travelMinutes?: number | null;
   vibeTags?: string[];
+  allowEmptyStart?: boolean;
+  showShuffle?: boolean;
 }) {
   const router = useRouter();
   const minDate = toLocalIsoDate(new Date());
@@ -165,6 +169,28 @@ export function NightPackagePlanEditor({
         We&apos;ll confirm this date with each place — subject to availability.
       </p>
       {dateError && <p className="text-sm text-red-500">{dateError}</p>}
+
+      {showShuffle && (
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="rounded-full border border-wtva-dark-300 px-4 py-2 text-sm font-semibold hover:border-accent/40"
+            onClick={() => {
+              router.push(
+                `/packages/${packageId}/plan?mode=random&r=${Date.now()}`,
+              );
+            }}
+          >
+            {vibeCopy.shuffleAgain}
+          </button>
+        </div>
+      )}
+
+      {allowEmptyStart && stops.length === 0 && (
+        <p className="rounded-2xl border border-dashed border-wtva-dark-300 px-4 py-6 text-center text-sm text-wtva-muted">
+          Your night is empty — add experiences from the live pool below.
+        </p>
+      )}
 
       <ul className="divide-y divide-wtva-dark-300 overflow-hidden rounded-2xl border border-wtva-dark-300 bg-wtva-card">
         {stops.map((stop, index) => {
@@ -295,7 +321,7 @@ export function NightPackagePlanEditor({
               ))}
               {sameSlotFirst.length === 0 && (
                 <li className="px-5 py-8 text-center text-sm text-wtva-muted">
-                  No other approved experiences yet.
+                  No other live experiences yet.
                 </li>
               )}
             </ul>

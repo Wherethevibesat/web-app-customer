@@ -1,5 +1,9 @@
 /** Client-safe types/helpers (no next/headers / Supabase server imports). */
 
+/** Anchor package for DIY / random checkouts (seeded in migration 048). */
+export const DIY_VIBE_SLUG = "build-your-own";
+export const DIY_VIBE_ID = "a0000000-0000-4000-8000-0000000000d1";
+
 export type ApprovedStopOffer = {
   id: string;
   title: string;

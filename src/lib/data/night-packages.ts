@@ -1,8 +1,13 @@
 import { createClient } from "@/lib/supabase/server";
 import type { ApprovedStopOffer } from "@/lib/data/night-packages-shared";
+import { DIY_VIBE_ID, DIY_VIBE_SLUG } from "@/lib/data/night-packages-shared";
 
 export type { ApprovedStopOffer } from "@/lib/data/night-packages-shared";
-export { slotTypeLabel } from "@/lib/data/night-packages-shared";
+export {
+  DIY_VIBE_ID,
+  DIY_VIBE_SLUG,
+  slotTypeLabel,
+} from "@/lib/data/night-packages-shared";
 
 export type NightPackageStop = {
   id: string;
@@ -57,7 +62,7 @@ export type NightPackage = {
 
 const OFFER_FIELDS = `
   id, title, description, slot_type, price_cents, inclusions,
-  arrival_window, image_url, status, is_active,
+  arrival_window, image_url, status, is_active, diy_pool,
   why_picked, duration_label, dress_code, crowd_label,
   venue:venues(id, name)
 `;
@@ -78,10 +83,13 @@ function normalizeStops(raw: unknown): NightPackageStop[] {
       const offer = s.stop_offer as NightPackageStop["stop_offer"] & {
         status?: string;
         is_active?: boolean;
+        diy_pool?: boolean;
       };
       if (!offer) return false;
-      if (offer.status && offer.status !== "approved") return false;
       if (offer.is_active === false) return false;
+      const bookable =
+        offer.status === "approved" || offer.diy_pool === true;
+      if (offer.status != null && !bookable) return false;
       return true;
     })
     .sort((a, b) => a.sort_order - b.sort_order);
@@ -125,7 +133,10 @@ function normalizePackage(row: Record<string, unknown>): NightPackage {
   };
 }
 
-export async function listPublishedNightPackages(): Promise<NightPackage[]> {
+export async function listPublishedNightPackages(options?: {
+  /** Include the Build Your Own anchor package (default: hide from curated browse). */
+  includeDiyAnchor?: boolean;
+}): Promise<NightPackage[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("night_packages")
@@ -134,7 +145,13 @@ export async function listPublishedNightPackages(): Promise<NightPackage[]> {
     .order("sort_order")
     .order("created_at", { ascending: false });
   if (error) throw error;
-  return (data ?? []).map((row) => normalizePackage(row as Record<string, unknown>));
+  const packages = (data ?? []).map((row) =>
+    normalizePackage(row as Record<string, unknown>),
+  );
+  if (options?.includeDiyAnchor) return packages;
+  return packages.filter(
+    (p) => p.slug !== DIY_VIBE_SLUG && p.id !== DIY_VIBE_ID,
+  );
 }
 
 export async function getPublishedNightPackage(
@@ -158,10 +175,11 @@ export async function getPublishedNightPackage(
   return normalizePackage(data as Record<string, unknown>);
 }
 
-/** Public catalog of venue stops guests can swap/add into a plan. */
+/** Bookable catalog: curated-approved OR DIY-pool live stops. */
 export async function listApprovedStopOffers(options?: {
   slotType?: string;
   excludeIds?: string[];
+  diyOnly?: boolean;
 }): Promise<ApprovedStopOffer[]> {
   const supabase = await createClient();
   let query = supabase
@@ -173,10 +191,15 @@ export async function listApprovedStopOffers(options?: {
       venue:venues(id, name)
     `,
     )
-    .eq("status", "approved")
     .eq("is_active", true)
     .order("slot_type")
     .order("title");
+
+  if (options?.diyOnly) {
+    query = query.eq("diy_pool", true);
+  } else {
+    query = query.or("status.eq.approved,diy_pool.eq.true");
+  }
 
   if (options?.slotType) {
     query = query.eq("slot_type", options.slotType);
@@ -210,4 +233,62 @@ export async function listApprovedStopOffers(options?: {
       } satisfies ApprovedStopOffer;
     })
     .filter((s) => !exclude.has(s.id));
+}
+
+const RANDOM_SLOT_ORDER = [
+  "brunch",
+  "day_party",
+  "lounge",
+  "night",
+  "after_hours",
+] as const;
+
+/** Shuffle one stop per time slot from the DIY pool (Expedia-style mix). */
+export async function shuffleRandomDiyVibe(options?: {
+  maxStops?: number;
+}): Promise<ApprovedStopOffer[]> {
+  let pool = await listApprovedStopOffers({ diyOnly: true });
+  // Until venues publish to DIY, fall back to any bookable approved stops.
+  if (!pool.length) {
+    pool = await listApprovedStopOffers();
+  }
+  if (!pool.length) return [];
+
+  const maxStops = Math.max(2, Math.min(6, options?.maxStops ?? 4));
+  const bySlot = new Map<string, ApprovedStopOffer[]>();
+  for (const offer of pool) {
+    const list = bySlot.get(offer.slot_type) ?? [];
+    list.push(offer);
+    bySlot.set(offer.slot_type, list);
+  }
+
+  const picked: ApprovedStopOffer[] = [];
+  const usedVenues = new Set<string>();
+
+  for (const slot of RANDOM_SLOT_ORDER) {
+    if (picked.length >= maxStops) break;
+    const candidates = bySlot.get(slot) ?? [];
+    if (!candidates.length) continue;
+    // Prefer different venues when possible
+    const shuffled = [...candidates].sort(() => Math.random() - 0.5);
+    const choice =
+      shuffled.find((c) => c.venue?.id && !usedVenues.has(c.venue.id)) ??
+      shuffled[0];
+    if (!choice) continue;
+    picked.push(choice);
+    if (choice.venue?.id) usedVenues.add(choice.venue.id);
+  }
+
+  // Fill if we still need more
+  if (picked.length < 2) {
+    const rest = [...pool]
+      .filter((o) => !picked.some((p) => p.id === o.id))
+      .sort(() => Math.random() - 0.5);
+    for (const o of rest) {
+      if (picked.length >= maxStops) break;
+      picked.push(o);
+    }
+  }
+
+  return picked;
 }

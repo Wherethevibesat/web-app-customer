@@ -7,6 +7,8 @@ export const vibeCopy = {
   makeItMine: "Continue",
   buildYourVibe: "Build Your Vibe",
   buildMyVibe: "Build My Vibe",
+  buildYourOwn: "Build Your Own",
+  surpriseMe: "Surprise Me",
   bookMyVibe: "Book My Vibe",
   myPlans: "My Plans",
   vibesTab: "Vibes",
@@ -17,8 +19,11 @@ export const vibeCopy = {
   emptyBrowse: "No curated vibes are published yet. Check back soon.",
   featuredBadge: "Trending",
   pickYourVibeTitle: "Pick your vibe",
-  pickYourVibeSubtitle: "Start from an occasion — or browse curated plans below.",
+  pickYourVibeSubtitle:
+    "Start from an occasion, shuffle a random vibe, or build your own.",
   seeAllVibes: "See all vibes",
+  diyEntryHint: "Mix venues yourself — or let us shuffle a full night from the live pool.",
+  shuffleAgain: "Shuffle again",
   /** @deprecated use buildYourVibe */
   customizeYourVibe: "Build Your Vibe",
   /** @deprecated review removed from flow */

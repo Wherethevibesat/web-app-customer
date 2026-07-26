@@ -16,17 +16,16 @@ export function PageShell({
   backLabel?: string;
   children: React.ReactNode;
   className?: string;
+  /** default/wide = site container (max-w-7xl); narrow = forms/checkout */
   width?: "default" | "narrow" | "wide";
 }) {
   const max =
     width === "narrow"
       ? "max-w-xl"
-      : width === "wide"
-        ? "max-w-7xl"
-        : "max-w-4xl";
+      : "max-w-7xl";
 
   return (
-    <div className={cn("mx-auto px-4 py-10 lg:px-8 lg:py-14", max, className)}>
+    <div className={cn("mx-auto w-full px-4 py-10 lg:px-8 lg:py-14", max, className)}>
       {backHref && (
         <Link href={backHref} className="text-sm text-wtva-muted hover:text-foreground">
           ← {backLabel}

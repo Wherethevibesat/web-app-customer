@@ -64,15 +64,24 @@ export function VibePreview({ pkg }: { pkg: NightPackage }) {
       )}
 
       <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-5">
-        <p className="text-2xl font-bold tabular-nums">
-          {formatPrice(perPerson)}
-          <span className="ml-1 text-sm font-normal text-wtva-muted">/ person</span>
-        </p>
-        <p className="mt-1 text-sm text-wtva-muted">
-          {stops.length} experiences · one checkout
-        </p>
+        {stops.length > 0 ? (
+          <>
+            <p className="text-2xl font-bold tabular-nums">
+              {formatPrice(perPerson)}
+              <span className="ml-1 text-sm font-normal text-wtva-muted">/ person</span>
+            </p>
+            <p className="mt-1 text-sm text-wtva-muted">
+              {stops.length} experiences · one checkout
+            </p>
+          </>
+        ) : (
+          <p className="text-sm text-wtva-muted">
+            Mix experiences from the live pool, then checkout once.
+          </p>
+        )}
         <Link href={planHref} className={buttonClass("primary", "lg", "mt-4 w-full")}>
-          {vibeCopy.makeItMine} <ArrowRight className="h-4 w-4" />
+          {stops.length > 0 ? vibeCopy.makeItMine : vibeCopy.buildYourOwn}{" "}
+          <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
     </div>
