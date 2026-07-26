@@ -16,6 +16,8 @@ const PUBLIC_PREFIXES = [
   "/about",
   "/privacy",
   "/terms",
+  "/support",
+  "/copyright",
   "/help",
   "/auth",
   "/configuration-error",

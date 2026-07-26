@@ -31,6 +31,14 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           Terms
         </Link>
         {" · "}
+        <Link href="/support" className="hover:text-foreground">
+          Support
+        </Link>
+        {" · "}
+        <Link href="/copyright" className="hover:text-foreground">
+          Copyright
+        </Link>
+        {" · "}
         <Link href="/help" className="hover:text-foreground">
           Help
         </Link>

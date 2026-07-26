@@ -40,9 +40,11 @@ export function SiteFooter() {
             <p className="text-sm font-semibold">Company</p>
             <ul className="mt-3 space-y-2 text-sm text-wtva-muted">
               <li><Link href="/about" className="hover:text-foreground">About</Link></li>
+              <li><Link href="/support" className="hover:text-foreground">Support</Link></li>
               <li><Link href="/help" className="hover:text-foreground">Help</Link></li>
               <li><Link href="/privacy" className="hover:text-foreground">Privacy</Link></li>
               <li><Link href="/terms" className="hover:text-foreground">Terms</Link></li>
+              <li><Link href="/copyright" className="hover:text-foreground">Copyright</Link></li>
               <li>
                 <Link href="/for-business" className="hover:text-foreground">
                   For business
@@ -52,7 +54,13 @@ export function SiteFooter() {
           </div>
         </div>
         <p className="mt-10 border-t border-wtva-dark-300 pt-6 text-center text-xs text-wtva-subtle">
-          © {new Date().getFullYear()} Where The Vibes At. All rights reserved.
+          <Link href="/copyright" className="hover:text-foreground">
+            © {new Date().getFullYear()} Where The Vibes At. All rights reserved.
+          </Link>
+          {" · "}
+          <Link href="/support" className="hover:text-foreground">
+            Support
+          </Link>
         </p>
       </div>
     </footer>

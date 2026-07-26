@@ -52,9 +52,13 @@ export default async function HelpPage() {
             <h2 className="font-semibold">Contact</h2>
             <p className="mt-3 text-sm text-wtva-muted">
               Email us at{" "}
-              <a href="mailto:support@wherethevibesat.com" className="text-foreground underline">
-                support@wherethevibesat.com
+              <a href="mailto:business@wherethevibesat.com" className="text-foreground underline">
+                business@wherethevibesat.com
               </a>
+              {" · "}
+              <Link href="/support" className="text-foreground underline">
+                Support page
+              </Link>
             </p>
           </div>
           <div className="rounded-xl border border-wtva-dark-300 bg-wtva-card p-6 text-sm">
@@ -71,6 +75,11 @@ export default async function HelpPage() {
                 </a>
               </li>
               <li>
+                <Link href="/support" className="hover:text-foreground">
+                  Support
+                </Link>
+              </li>
+              <li>
                 <Link href="/privacy" className="hover:text-foreground">
                   Privacy policy
                 </Link>
@@ -78,6 +87,11 @@ export default async function HelpPage() {
               <li>
                 <Link href="/terms" className="hover:text-foreground">
                   Terms of use
+                </Link>
+              </li>
+              <li>
+                <Link href="/copyright" className="hover:text-foreground">
+                  Copyright
                 </Link>
               </li>
             </ul>
