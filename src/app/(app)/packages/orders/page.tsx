@@ -6,26 +6,14 @@ import { VibeSplitInProgressList } from "@/components/vibe-split-in-progress";
 import { createClient } from "@/lib/supabase/server";
 import { listOpenVibeSplits } from "@/lib/data/vibe-open-splits";
 import { expireOverdueVibeRequests } from "@/lib/data/vibe-request-book";
+import {
+  listCustomerVibeOrders,
+  vibeOrderPackage,
+  vibeOrderStatusLabel,
+} from "@/lib/data/vibe-orders";
 import { formatPrice } from "@/lib/format";
 import { buttonClass } from "@/lib/button";
 import { vibeCopy } from "@/lib/vibe-copy";
-
-function statusLabel(status: string) {
-  switch (status) {
-    case "requested":
-      return "Waiting on venues";
-    case "awaiting_payment":
-      return "Ready to pay";
-    case "expired":
-      return "Request expired";
-    case "cancelled":
-      return "Cancelled";
-    case "paid":
-      return "Booked";
-    default:
-      return status;
-  }
-}
 
 export default async function NightPackageOrdersPage() {
   const supabase = await createClient();
@@ -36,26 +24,12 @@ export default async function NightPackageOrdersPage() {
 
   await expireOverdueVibeRequests().catch(() => 0);
 
-  const [{ data: orders }, openSplits] = await Promise.all([
-    supabase
-      .from("night_package_orders")
-      .select(
-        `
-      id, confirmation_code, party_size, starts_on, total_cents, status, paid_at, created_at, expires_at,
-      package:night_packages(id, title, slug),
-      stops:night_package_order_stops(
-        id, title, venue_id, scheduled_label, redemption_code, status, sort_order,
-        line_total_cents, stop_offer_id,
-        venue:venues(name)
-      )
-    `,
-      )
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false }),
+  const [{ orders, error: ordersError }, openSplits] = await Promise.all([
+    listCustomerVibeOrders(supabase, user.id),
     listOpenVibeSplits(supabase, user.id),
   ]);
 
-  const rows = orders ?? [];
+  const rows = orders;
   const empty = rows.length === 0 && openSplits.length === 0;
 
   return (
@@ -63,6 +37,12 @@ export default async function NightPackageOrdersPage() {
       title={vibeCopy.myPlans}
       subtitle="Open requests, payments, itineraries, and per-stop codes."
     >
+      {ordersError && (
+        <p className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          Couldn’t load plans ({ordersError}). Pull to refresh or try again.
+        </p>
+      )}
+
       {openSplits.length > 0 && (
         <section className="mb-8 space-y-3">
           <h2 className="text-base font-bold">Finish payment</h2>
@@ -88,25 +68,9 @@ export default async function NightPackageOrdersPage() {
           )}
           <ul className="space-y-6">
             {rows.map((order) => {
-              const pkg = order.package as
-                | { id: string; title: string; slug: string | null }
-                | { id: string; title: string; slug: string | null }[]
-                | null;
-              const pkgRow = Array.isArray(pkg) ? pkg[0] : pkg;
+              const pkgRow = vibeOrderPackage(order);
               const isPaid = order.status === "paid";
-              const stops = (
-                (order.stops as {
-                  id: string;
-                  title: string;
-                  scheduled_label: string | null;
-                  redemption_code: string;
-                  status: string;
-                  sort_order: number;
-                  line_total_cents: number | null;
-                  stop_offer_id: string;
-                  venue: { name: string } | { name: string }[] | null;
-                }[]) ?? []
-              ).map((s) => {
+              const stops = (order.stops ?? []).map((s) => {
                 const venue = Array.isArray(s.venue) ? s.venue[0] : s.venue;
                 return {
                   id: s.id,
@@ -137,13 +101,13 @@ export default async function NightPackageOrdersPage() {
                       packageTitle={pkgRow?.title ?? "Your vibe"}
                       partySize={order.party_size}
                       totalCents={order.total_cents}
-                      startsOn={order.starts_on as string | null}
+                      startsOn={order.starts_on}
                       stops={stops}
                     />
                   ) : (
                     <div>
                       <p className="text-xs font-bold uppercase tracking-wide text-accent">
-                        {statusLabel(order.status)}
+                        {vibeOrderStatusLabel(order.status)}
                       </p>
                       <h2 className="mt-1 text-lg font-bold">
                         {pkgRow?.title ?? "Your vibe"}
@@ -188,7 +152,7 @@ export default async function NightPackageOrdersPage() {
                     </div>
                   )}
                   <p className="mt-3 text-right text-xs text-wtva-muted capitalize">
-                    {statusLabel(order.status)}
+                    {vibeOrderStatusLabel(order.status)}
                     {order.paid_at
                       ? ` · paid ${new Date(order.paid_at).toLocaleDateString()}`
                       : ""}

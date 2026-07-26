@@ -5,15 +5,20 @@ import {
   matchesOccasionVibe,
   toPackageCard,
 } from "@/lib/data/night-packages-shared";
+import {
+  listCustomerVibeOrders,
+  vibeOrderPackage,
+  vibeOrderStatusLabel,
+} from "@/lib/data/vibe-orders";
 import { createClient } from "@/lib/supabase/server";
 import { occasionVibeLabel, vibeCopy } from "@/lib/vibe-copy";
 
 export default async function PackagesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ vibe?: string }>;
+  searchParams: Promise<{ vibe?: string; tab?: string }>;
 }) {
-  const { vibe: vibeParam } = await searchParams;
+  const { vibe: vibeParam, tab: tabParam } = await searchParams;
   const vibeKey = vibeParam?.trim() || null;
   const packages = await listPublishedNightPackages().catch(() => []);
   const cards = packages.map(toPackageCard);
@@ -27,14 +32,25 @@ export default async function PackagesPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  let hasOrders = false;
-  if (user) {
-    const { count } = await supabase
-      .from("night_package_orders")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id);
-    hasOrders = (count ?? 0) > 0;
-  }
+  const planRows = user
+    ? (await listCustomerVibeOrders(supabase, user.id)).orders
+    : [];
+
+  const planSummaries = planRows.map((order) => {
+    const pkg = vibeOrderPackage(order);
+    return {
+      id: order.id,
+      title: pkg?.title ?? "Your vibe",
+      status: order.status,
+      statusLabel: vibeOrderStatusLabel(order.status),
+      confirmationCode: order.confirmation_code,
+      partySize: order.party_size,
+      startsOn: order.starts_on,
+      totalCents: order.total_cents,
+      expiresAt: order.expires_at,
+      packagePath: pkg ? pkg.slug || pkg.id : null,
+    };
+  });
 
   const occasionLabel = occasionVibeLabel(vibeKey);
   const subtitle = occasionLabel
@@ -45,10 +61,12 @@ export default async function PackagesPage({
     <PageShell title={vibeCopy.curatedTitle} subtitle={subtitle}>
       <PackagesHub
         packages={filtered}
-        hasOrders={hasOrders}
+        plans={planSummaries}
+        initialTab={tabParam === "plans" || planSummaries.some((p) => p.status === "requested" || p.status === "awaiting_payment") ? "plans" : "vibes"}
         vibeFilter={vibeKey}
         vibeFilterLabel={occasionLabel}
         unfilteredCount={cards.length}
+        signedIn={Boolean(user)}
       />
     </PageShell>
   );

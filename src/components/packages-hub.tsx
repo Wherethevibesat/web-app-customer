@@ -8,22 +8,40 @@ import { buttonClass } from "@/lib/button";
 import type { PackageCard } from "@/lib/data/night-packages-shared";
 import { slotTypeLabel } from "@/lib/data/night-packages-shared";
 import { DIY_VIBE_SLUG } from "@/lib/data/night-packages-shared";
+import { formatPrice } from "@/lib/format";
 import { vibeCopy } from "@/lib/vibe-copy";
+
+export type PlanSummary = {
+  id: string;
+  title: string;
+  status: string;
+  statusLabel: string;
+  confirmationCode: string;
+  partySize: number;
+  startsOn: string | null;
+  totalCents: number;
+  expiresAt: string | null;
+  packagePath: string | null;
+};
 
 export function PackagesHub({
   packages,
-  hasOrders,
+  plans = [],
+  initialTab = "vibes",
   vibeFilter,
   vibeFilterLabel,
   unfilteredCount,
+  signedIn = false,
 }: {
   packages: PackageCard[];
-  hasOrders: boolean;
+  plans?: PlanSummary[];
+  initialTab?: "vibes" | "plans";
   vibeFilter?: string | null;
   vibeFilterLabel?: string | null;
   unfilteredCount?: number;
+  signedIn?: boolean;
 }) {
-  const [tab, setTab] = useState<"vibes" | "plans">(hasOrders ? "vibes" : "vibes");
+  const [tab, setTab] = useState<"vibes" | "plans">(initialTab);
 
   return (
     <div>
@@ -89,21 +107,89 @@ export function PackagesHub({
           }`}
         >
           {vibeCopy.myPlans}
+          {plans.length > 0 ? ` (${plans.length})` : ""}
         </button>
       </div>
 
       {tab === "plans" ? (
-        <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-6">
-          <p className="font-semibold">{vibeCopy.myPlans}</p>
-          <p className="mt-1 text-sm text-wtva-muted">
-            Confirmation codes and per-stop redemption live here after checkout.
-          </p>
-          <Link
-            href="/packages/orders"
-            className="mt-4 inline-block text-sm font-semibold text-accent hover:opacity-80"
-          >
-            Open {vibeCopy.myPlans.toLowerCase()} →
-          </Link>
+        <div className="space-y-4">
+          {!signedIn ? (
+            <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-6">
+              <p className="font-semibold">{vibeCopy.myPlans}</p>
+              <p className="mt-1 text-sm text-wtva-muted">
+                Sign in to see open requests and booked vibes.
+              </p>
+              <Link
+                href={`/auth/login?next=${encodeURIComponent("/packages?tab=plans")}`}
+                className="mt-4 inline-block text-sm font-semibold text-accent hover:opacity-80"
+              >
+                Sign in →
+              </Link>
+            </div>
+          ) : plans.length === 0 ? (
+            <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-6">
+              <p className="font-semibold">No plans yet</p>
+              <p className="mt-1 text-sm text-wtva-muted">
+                Request-to-book and paid vibes show up here — including while venues are still
+                confirming.
+              </p>
+              <Link
+                href="/packages/orders"
+                className="mt-4 inline-block text-sm font-semibold text-accent hover:opacity-80"
+              >
+                Open full {vibeCopy.myPlans.toLowerCase()} →
+              </Link>
+            </div>
+          ) : (
+            <>
+              <ul className="space-y-3">
+                {plans.map((plan) => {
+                  const payHref =
+                    plan.status === "awaiting_payment" && plan.packagePath
+                      ? `/packages/${plan.packagePath}/checkout?orderId=${plan.id}`
+                      : null;
+                  return (
+                    <li
+                      key={plan.id}
+                      className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-5"
+                    >
+                      <p className="text-xs font-bold uppercase tracking-wide text-accent">
+                        {plan.statusLabel}
+                      </p>
+                      <h3 className="mt-1 text-lg font-bold">{plan.title}</h3>
+                      <p className="mt-1 text-sm text-wtva-muted">
+                        Ref {plan.confirmationCode}
+                        {plan.startsOn ? ` · ${plan.startsOn}` : ""}
+                        {` · ${plan.partySize} guests · ${formatPrice(plan.totalCents / 100)}`}
+                        {plan.status === "requested" && plan.expiresAt
+                          ? ` · expires ${new Date(plan.expiresAt).toLocaleString()}`
+                          : ""}
+                      </p>
+                      {plan.status === "requested" && (
+                        <p className="mt-2 text-sm text-wtva-muted">
+                          Waiting for every venue to confirm — then you can pay.
+                        </p>
+                      )}
+                      {payHref && (
+                        <Link
+                          href={payHref}
+                          className={buttonClass("primary", "md", "mt-3")}
+                        >
+                          Pay now →
+                        </Link>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+              <Link
+                href="/packages/orders"
+                className="inline-block text-sm font-semibold text-accent hover:opacity-80"
+              >
+                Open full {vibeCopy.myPlans.toLowerCase()} →
+              </Link>
+            </>
+          )}
         </div>
       ) : packages.length === 0 ? (
         <div className="rounded-2xl border border-wtva-dark-300 bg-wtva-card p-6">
