@@ -46,10 +46,30 @@ export function formatVibeStartLabel(isoDate: EventDateIso): string {
   });
 }
 
-/** True if ISO date is today or later (local). */
+/** UTC calendar date `YYYY-MM-DD`. */
+export function toUtcIsoDate(date: Date): EventDateIso {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/**
+ * True if ISO date is today or later for the guest.
+ * Server often runs in UTC while guests pick "today" in US local time — so evening
+ * bookings must not fail when UTC has already rolled to the next calendar day.
+ * Accept anything on/after UTC yesterday (covers all civil timezones).
+ */
 export function isIsoDateOnOrAfterToday(isoDate: string): boolean {
   if (!ISO_DATE_RE.test(isoDate)) return false;
-  return isoDate >= toLocalIsoDate(new Date());
+  if (typeof window !== "undefined") {
+    return isoDate >= toLocalIsoDate(new Date());
+  }
+  const now = new Date();
+  const utcToday = toUtcIsoDate(now);
+  const [y, m, d] = utcToday.split("-").map(Number);
+  const utcYesterday = toUtcIsoDate(new Date(Date.UTC(y, m - 1, d - 1)));
+  return isoDate >= utcYesterday;
 }
 
 export function startOfLocalDay(date: Date): Date {
